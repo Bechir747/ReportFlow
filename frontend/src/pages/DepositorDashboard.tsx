@@ -1,30 +1,51 @@
 import { useState, useEffect } from "react";
 import api from "../api/client";
 import type { Report } from "../types";
-import NotificationBell from "../components/NotificationBell";
+import { useToast } from "../contexts/ToastContext";
+import Modal from "../components/Modal";
+import StatusBadge from "../components/StatusBadge";
+import PriorityBadge from "../components/PriorityBadge";
+import Table from "../components/Table";
+import Button from "../components/Button";
+import EmptyState from "../components/EmptyState";
 import CommentThread from "../components/CommentThread";
 
 export default function DepositorDashboard() {
   const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [versions, setVersions] = useState<Array<{ id: string; version_number: number; uploaded_at: string }>>([]);
+  const [uploading, setUploading] = useState(false);
+  const { addToast } = useToast();
 
   useEffect(() => {
-    api.get("/reports").then((res) => setReports(res.data));
-  }, []);
+    const controller = new AbortController();
+    api.get("/reports", { signal: controller.signal }).then((res) => {
+      setReports(res.data);
+      setLoading(false);
+    }).catch((_err) => {
+      if (controller.signal.aborted) return;
+      addToast("Couldn't load reports. Check your connection and try again.", "error");
+      setLoading(false);
+    });
+    return () => controller.abort();
+  }, [addToast]);
 
   const uploadFile = async (reportId: string, file: File) => {
     const formData = new FormData();
     formData.append("file", file);
+    setUploading(true);
     try {
       await api.post(`/reports/${reportId}/upload`, formData);
-      alert("File uploaded successfully");
+      addToast("File uploaded", "success");
       if (selectedReport?.id === reportId) loadVersions(reportId);
       const res = await api.get("/reports");
       setReports(res.data);
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || "Upload failed";
-      alert(msg);
+      addToast(msg, "error");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -43,90 +64,135 @@ export default function DepositorDashboard() {
     else setVersions([]);
   };
 
+  const columns = [
+    { key: "title", label: "Title" },
+    { key: "type", label: "Type", width: "120px" },
+    { key: "status", label: "Status", width: "110px" },
+    { key: "priority", label: "Priority", width: "100px" },
+    { key: "due", label: "Due", width: "110px" },
+    { key: "upload", label: "Upload", width: "200px" },
+    { key: "actions", label: "", width: "80px" },
+  ];
+
+  const rows = reports.map((r) => ({
+    title: r.title,
+    type: r.type,
+    status: <StatusBadge status={r.status} />,
+    priority: <PriorityBadge priority={r.priority} />,
+    due: (
+      <span style={{ color: new Date(r.due_date) < new Date() ? "var(--color-error)" : "inherit" }}>
+        {new Date(r.due_date).toLocaleDateString()}
+      </span>
+    ),
+    upload: (
+      (r.status === null || r.status === "TO_REDO") ? (
+        <label
+          style={{
+            display: "inline-block",
+            padding: "4px 12px",
+            borderRadius: "var(--rounded-sm)",
+            border: "1px dashed var(--color-outline-variant)",
+            font: "var(--font-code-sm)",
+            cursor: "pointer",
+            color: "var(--color-on-surface-variant)",
+            transition: "border var(--transition-fast)",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--color-primary)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--color-outline-variant)"; }}
+        >
+          Choose file
+          <input
+            type="file"
+            hidden
+            disabled={uploading}
+            onChange={(e) => {
+              if (e.target.files?.[0]) uploadFile(r.id, e.target.files[0]);
+            }}
+          />
+        </label>
+      ) : (
+        <span style={{ font: "var(--font-code-sm)", color: "var(--color-outline)" }}>Locked</span>
+      )
+    ),
+    actions: (
+      <Button variant="ghost" style={{ fontSize: 12, padding: "4px 10px" }} onClick={() => openDetails(r)}>
+        Details
+      </Button>
+    ),
+  }));
+
+  const canUpload = selectedReport && (selectedReport.status === null || selectedReport.status === "TO_REDO");
+
   return (
-    <div>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 16 }}>
-        <h1>Depositor Dashboard</h1>
-        <NotificationBell />
-      </header>
+    <>
+      {loading ? (
+        <div role="status" aria-label="Loading" style={{ padding: "var(--space-xl)", textAlign: "center", color: "var(--color-on-surface-variant)" }}>
+            Loading...
+          </div>
+      ) : reports.length === 0 ? (
+        <EmptyState message="No reports assigned yet. New reports will appear here once assigned." />
+      ) : (
+        <Table columns={columns} rows={rows} />
+      )}
 
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "#f5f5f5" }}>
-            <th style={thStyle}>Title</th>
-            <th style={thStyle}>Type</th>
-            <th style={thStyle}>Status</th>
-            <th style={thStyle}>Priority</th>
-            <th style={thStyle}>Active</th>
-            <th style={thStyle}>Due</th>
-            <th style={thStyle}>Upload</th>
-            <th style={thStyle}></th>
-          </tr>
-        </thead>
-        <tbody>
-          {reports.length === 0 && (
-            <tr><td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#888" }}>No assigned reports</td></tr>
-          )}
-          {reports.map((r) => (
-            <tr key={r.id} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={tdStyle}>{r.title}</td>
-              <td style={tdStyle}>{r.type}</td>
-              <td style={tdStyle}><StatusBadge status={r.status} /></td>
-              <td style={tdStyle}>{r.priority}</td>
-              <td style={tdStyle}>{r.is_active ? "✅" : "⏳"}</td>
-              <td style={{ ...tdStyle, color: new Date(r.due_date) < new Date() ? "red" : "inherit" }}>
-                {new Date(r.due_date).toLocaleDateString()}
-              </td>
-              <td style={tdStyle}>
-                {(r.status === null || r.status === "TO_REDO") && (
-                  <input
-                    type="file"
-                    onChange={(e) => {
-                      if (e.target.files?.[0]) uploadFile(r.id, e.target.files[0]);
-                    }}
-                  />
-                )}
-                {r.status !== null && r.status !== "TO_REDO" && <span style={{ color: "#888", fontSize: 12 }}>Locked</span>}
-              </td>
-              <td style={tdStyle}>
-                <button onClick={() => openDetails(r)}>Details</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {selectedReport && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "white", padding: 24, maxWidth: 700, width: "90%", maxHeight: "80vh", overflowY: "auto", borderRadius: 8 }}>
-            <h2>{selectedReport.title}</h2>
-            <button onClick={() => setSelectedReport(null)} style={{ float: "right" }}>Close</button>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 16 }}>
-              <div><strong>Status:</strong> <StatusBadge status={selectedReport.status} /></div>
-              <div><strong>Priority:</strong> {selectedReport.priority}</div>
-              <div><strong>Active:</strong> {selectedReport.is_active ? "Yes" : "No"}</div>
-              <div><strong>Due:</strong> {new Date(selectedReport.due_date).toLocaleDateString()}</div>
-              <div><strong>Created:</strong> {new Date(selectedReport.created_at).toLocaleDateString()}</div>
+      <Modal
+        open={!!selectedReport}
+        onClose={() => setSelectedReport(null)}
+        title={selectedReport?.title || ""}
+      >
+        {selectedReport && (
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "var(--space-sm)",
+                marginBottom: "var(--space-lg)",
+              }}
+            >
+              <div>
+                <span style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Status</span>
+                <div style={{ marginTop: 2 }}><StatusBadge status={selectedReport.status} /></div>
+              </div>
+              <div>
+                <span style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Priority</span>
+                <div style={{ marginTop: 2 }}><PriorityBadge priority={selectedReport.priority} /></div>
+              </div>
+              <div>
+                <span style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Due</span>
+                <div style={{ font: "var(--font-body-md)", marginTop: 2 }}>
+                  {new Date(selectedReport.due_date).toLocaleDateString()}
+                </div>
+              </div>
+              <div>
+                <span style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Created</span>
+                <div style={{ font: "var(--font-body-md)", marginTop: 2 }}>
+                  {new Date(selectedReport.created_at).toLocaleDateString()}
+                </div>
+              </div>
             </div>
 
             {versions.length > 0 && (
               <>
-                <h3>Version History</h3>
-                <table style={{ width: "100%", marginBottom: 16 }}>
+                <h3 style={{ font: "var(--font-headline-sm)", margin: "0 0 var(--space-sm)" }}>Version History</h3>
+                <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "var(--space-lg)" }}>
                   <thead>
-                    <tr style={{ background: "#f5f5f5" }}>
-                      <th style={thStyle}>Version</th>
-                      <th style={thStyle}>Uploaded</th>
-                      <th style={thStyle}>Current</th>
+                    <tr style={{ background: "var(--color-surface-container-low)" }}>
+                      <th style={{ textAlign: "left", padding: "8px 12px", font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Version</th>
+                      <th style={{ textAlign: "left", padding: "8px 12px", font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Uploaded</th>
+                      <th style={{ textAlign: "left", padding: "8px 12px", font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Current</th>
                     </tr>
                   </thead>
                   <tbody>
                     {versions.map((v) => (
-                      <tr key={v.id}>
-                        <td style={tdStyle}>v{v.version_number}</td>
-                        <td style={tdStyle}>{new Date(v.uploaded_at).toLocaleString()}</td>
-                        <td style={tdStyle}>{selectedReport.current_version_id === v.id ? "✅" : ""}</td>
+                      <tr key={v.id} style={{ borderBottom: "1px solid var(--color-outline-variant)" }}>
+                        <td style={{ padding: "8px 12px", font: "var(--font-code-sm)" }}>v{v.version_number}</td>
+                        <td style={{ padding: "8px 12px", font: "var(--font-body-md)" }}>{new Date(v.uploaded_at).toLocaleString()}</td>
+                        <td style={{ padding: "8px 12px" }}>
+                          {selectedReport.current_version_id === v.id ? (
+                            <span style={{ font: "var(--font-code-sm)", color: "var(--color-status-approved)" }}>Current</span>
+                          ) : ""}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -134,31 +200,50 @@ export default function DepositorDashboard() {
               </>
             )}
 
-            {(selectedReport.status === null || selectedReport.status === "TO_REDO") && (
-              <div style={{ marginBottom: 16 }}>
-                <h3>Upload File</h3>
-                <input
-                  type="file"
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) uploadFile(selectedReport.id, e.target.files[0]);
+            {canUpload && (
+              <div style={{ marginBottom: "var(--space-lg)" }}>
+                <h3 style={{ font: "var(--font-headline-sm)", margin: "0 0 var(--space-sm)" }}>Upload File</h3>
+                <label
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "var(--space-sm)",
+                    padding: "var(--space-lg)",
+                    borderRadius: "var(--rounded-sm)",
+                    border: "2px dashed var(--color-outline-variant)",
+                    background: "var(--color-surface-container-low)",
+                    cursor: "pointer",
+                    font: "var(--font-body-md)",
+                    color: "var(--color-on-surface-variant)",
+                    transition: "border var(--transition-fast), background var(--transition-fast)",
                   }}
-                />
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = "var(--color-primary)";
+                    e.currentTarget.style.background = "var(--color-primary-tint)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = "var(--color-outline-variant)";
+                    e.currentTarget.style.background = "var(--color-surface-container-low)";
+                  }}
+                >
+                  {uploading ? "Uploading..." : "Click to browse or drag & drop"}
+                  <input
+                    type="file"
+                    hidden
+                    disabled={uploading}
+                    onChange={(e) => {
+                      if (e.target.files?.[0]) uploadFile(selectedReport.id, e.target.files[0]);
+                    }}
+                  />
+                </label>
               </div>
             )}
 
             <CommentThread reportId={selectedReport.id} />
-          </div>
-        </div>
-      )}
-    </div>
+          </>
+        )}
+      </Modal>
+    </>
   );
 }
-
-function StatusBadge({ status }: { status: string | null }) {
-  if (!status) return <span style={{ color: "#888" }}>DRAFT</span>;
-  const colors: Record<string, string> = { PENDING: "blue", APPROVED: "green", REJECTED: "red", TO_REDO: "orange", CANCELED: "gray" };
-  return <span style={{ color: colors[status] || "#888", fontWeight: "bold" }}>{status}</span>;
-}
-
-const thStyle: React.CSSProperties = { textAlign: "left", padding: "8px 12px", borderBottom: "2px solid #ddd" };
-const tdStyle: React.CSSProperties = { padding: "8px 12px" };

@@ -4,7 +4,7 @@ from aiokafka import AIOKafkaConsumer
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, reports, uploads, reviews, comments, audit, notifications
+from app.api import auth, reports, uploads, reviews, comments, audit, notifications, users
 from app.config import settings
 from app.database import engine, Base
 from app.kafka.consumers.notification_consumer import NotificationConsumer
@@ -76,6 +76,7 @@ app.include_router(reviews.router)
 app.include_router(comments.router)
 app.include_router(audit.router)
 app.include_router(notifications.router)
+app.include_router(users.router)
 
 
 @app.get("/health")

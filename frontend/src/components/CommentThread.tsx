@@ -1,16 +1,31 @@
 import { useState, useEffect, type FormEvent } from "react";
 import api from "../api/client";
 import type { Comment } from "../types";
+import { useToast } from "../contexts/ToastContext";
+import Button from "./Button";
 
 interface Props {
   reportId: string;
   versionId?: string | null;
 }
 
+function timeAgo(date: string): string {
+  const ms = Date.now() - new Date(date).getTime();
+  const mins = Math.floor(ms / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(date).toLocaleDateString();
+}
+
 export default function CommentThread({ reportId, versionId }: Props) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [content, setContent] = useState("");
   const [replyTo, setReplyTo] = useState<string | null>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     api.get(`/reports/${reportId}/comments`).then((res) => setComments(res.data));
@@ -36,75 +51,97 @@ export default function CommentThread({ reportId, versionId }: Props) {
       const res = await api.get(`/reports/${reportId}/comments`);
       setComments(res.data);
     } catch {
-      alert("Failed to post comment");
+      addToast("Couldn't post comment. Try again.", "error");
     }
   };
 
   const deleteComment = async (commentId: string) => {
+    if (!window.confirm("Delete this comment? This can't be undone.")) return;
     try {
       await api.delete(`/reports/comments/${commentId}`);
       setComments((prev) =>
         prev.map((c) => (c.id === commentId ? { ...c, is_deleted: true, content: "[deleted]" } : c))
       );
     } catch {
-      alert("Failed to delete comment");
+      addToast("Couldn't delete comment. Try again.", "error");
     }
   };
 
   return (
-    <div style={{ marginTop: 16 }}>
-      <h3>Comments</h3>
+    <div>
+      <h3 style={{ font: "var(--font-headline-sm)", margin: "0 0 var(--space-md)" }}>Comments</h3>
 
-      <form onSubmit={postComment} style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+      <form onSubmit={postComment} style={{ display: "flex", gap: "var(--space-sm)", marginBottom: "var(--space-md)" }}>
         <input
           type="text"
           value={content}
           onChange={(e) => setContent(e.target.value)}
           placeholder={replyTo ? "Write a reply..." : "Write a comment..."}
-          style={{ flex: 1 }}
+          style={{
+            flex: 1,
+            padding: "8px 12px",
+            borderRadius: "var(--rounded-sm)",
+            border: "1px solid var(--color-outline-variant)",
+            font: "var(--font-body-md)",
+            outline: "none",
+          }}
         />
-        <button type="submit">Post</button>
-        {replyTo && <button type="button" onClick={() => setReplyTo(null)}>Cancel Reply</button>}
+        <Button type="submit">{replyTo ? "Post reply" : "Post comment"}</Button>
+        {replyTo && (
+          <Button variant="secondary" type="button" onClick={() => setReplyTo(null)}>Cancel reply</Button>
+        )}
       </form>
 
-      {topLevel.length === 0 && <p style={{ color: "#888" }}>No comments yet.</p>}
+      {topLevel.length === 0 && (
+        <p style={{ color: "var(--color-on-surface-variant)", font: "var(--font-body-md)" }}>
+          No comments yet. Write a comment above to start the discussion.
+        </p>
+      )}
 
       {topLevel.map((comment) => (
-        <div key={comment.id} style={{ marginBottom: 12, padding: 8, borderLeft: "3px solid #ccc" }}>
-          <div>
-            <strong>User {comment.author_id.slice(0, 8)}</strong>
-            <small style={{ marginLeft: 8, color: "#888" }}>
-              {new Date(comment.created_at).toLocaleString()}
-            </small>
-            {comment.version_id && <small style={{ marginLeft: 8, color: "#888" }}>(v{comment.version_id.slice(0, 8)})</small>}
-          </div>
-          <p style={{ margin: "4px 0" }}>{comment.content}</p>
-          <div style={{ display: "flex", gap: 8 }}>
-            {!comment.is_deleted && (
-              <button onClick={() => setReplyTo(comment.id)} style={{ fontSize: 12 }}>
-                Reply
-              </button>
-            )}
-            {!comment.is_deleted && (
-              <button onClick={() => deleteComment(comment.id)} style={{ fontSize: 12, color: "red" }}>
-                Delete
-              </button>
+        <div key={comment.id} style={{ marginBottom: 12, padding: "var(--space-sm) var(--space-md)", borderLeft: "3px solid var(--color-outline-variant)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", marginBottom: "var(--space-xs)" }}>
+            <strong style={{ font: "var(--font-label-md)" }}>
+                User
+            </strong>
+            <span style={{ font: "var(--font-code-sm)", color: "var(--color-outline)" }}>
+              {timeAgo(comment.created_at)}
+            </span>
+            {comment.version_id && (
+              <span style={{ font: "var(--font-code-sm)", color: "var(--color-outline)" }}>
+                v{comment.version_id.slice(0, 8)}
+              </span>
             )}
           </div>
+          <p style={{ margin: "var(--space-xs) 0", font: "var(--font-body-md)" }}>{comment.content}</p>
+          {!comment.is_deleted && (
+            <div style={{ display: "flex", gap: "var(--space-sm)" }}>
+              <Button variant="ghost" style={{ fontSize: 12, padding: "2px 8px" }} onClick={() => setReplyTo(comment.id)}>Reply</Button>
+              <Button variant="ghost" style={{ fontSize: 12, padding: "2px 8px", color: "var(--color-error)" }} onClick={() => deleteComment(comment.id)}>Delete</Button>
+            </div>
+          )}
 
           {replies(comment.id).map((reply) => (
-            <div key={reply.id} style={{ marginLeft: 24, marginTop: 8, padding: 8, borderLeft: "2px solid #eee" }}>
-              <div>
-                <strong>User {reply.author_id.slice(0, 8)}</strong>
-                <small style={{ marginLeft: 8, color: "#888" }}>
-                  {new Date(reply.created_at).toLocaleString()}
-                </small>
+            <div
+              key={reply.id}
+              style={{
+                marginLeft: 24,
+                marginTop: 8,
+                padding: "var(--space-sm) var(--space-md)",
+                borderLeft: "2px solid var(--color-outline-variant)",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)", marginBottom: "var(--space-xs)" }}>
+                <strong style={{ font: "var(--font-label-md)" }}>
+                  User
+                </strong>
+                <span style={{ font: "var(--font-code-sm)", color: "var(--color-outline)" }}>
+                  {timeAgo(reply.created_at)}
+                </span>
               </div>
-              <p style={{ margin: "4px 0" }}>{reply.content}</p>
+              <p style={{ margin: "var(--space-xs) 0", font: "var(--font-body-md)" }}>{reply.content}</p>
               {!reply.is_deleted && (
-                <button onClick={() => deleteComment(reply.id)} style={{ fontSize: 12, color: "red" }}>
-                  Delete
-                </button>
+                <Button variant="ghost" style={{ fontSize: 12, padding: "2px 8px", color: "var(--color-error)" }} onClick={() => deleteComment(reply.id)}>Delete</Button>
               )}
             </div>
           ))}

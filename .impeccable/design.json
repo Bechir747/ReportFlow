@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-11T15:30:00.000Z",
+  "title": "Design System: ReportFlow",
+  "extensions": {
+    "colorMeta": {
+      "primary": { "role": "primary", "displayName": "Corporate Blue", "canonical": "oklch(0.29 0.13 270)", "tonalRamp": ["oklch(0.15 0.08 270)", "oklch(0.22 0.11 270)", "oklch(0.29 0.13 270)", "oklch(0.36 0.12 270)", "oklch(0.44 0.1 270)", "oklch(0.6 0.07 270)", "oklch(0.75 0.05 270)", "oklch(0.9 0.04 270)"] },
+      "on-primary": { "role": "on-primary", "displayName": "On Primary", "canonical": "#ffffff" },
+      "primary-container": { "role": "primary-container", "displayName": "Blue Container", "canonical": "oklch(0.34 0.14 270)", "tonalRamp": ["oklch(0.18 0.1 270)", "oklch(0.26 0.13 270)", "oklch(0.34 0.14 270)", "oklch(0.42 0.12 270)", "oklch(0.52 0.1 270)", "oklch(0.65 0.07 270)", "oklch(0.78 0.05 270)", "oklch(0.92 0.03 270)"] },
+      "secondary": { "role": "secondary", "displayName": "Slate Blue", "canonical": "oklch(0.44 0.03 270)", "tonalRamp": ["oklch(0.2 0.02 270)", "oklch(0.32 0.03 270)", "oklch(0.44 0.03 270)", "oklch(0.56 0.03 270)", "oklch(0.68 0.03 270)", "oklch(0.78 0.03 270)", "oklch(0.88 0.03 270)", "oklch(0.95 0.02 270)"] },
+      "error": { "role": "error", "displayName": "Rose", "canonical": "#ba1a1a", "tonalRamp": ["oklch(0.2 0.08 25)", "oklch(0.28 0.1 25)", "oklch(0.38 0.12 25)", "oklch(0.48 0.11 25)", "oklch(0.58 0.09 25)", "oklch(0.68 0.07 25)", "oklch(0.8 0.05 25)", "oklch(0.92 0.03 25)"] },
+      "success": { "role": "success", "displayName": "Emerald", "canonical": "#10b981", "tonalRamp": ["oklch(0.2 0.07 160)", "oklch(0.3 0.09 160)", "oklch(0.42 0.1 160)", "oklch(0.54 0.09 160)", "oklch(0.65 0.08 160)", "oklch(0.75 0.06 160)", "oklch(0.85 0.04 160)", "oklch(0.95 0.02 160)"] },
+      "warning": { "role": "warning", "displayName": "Amber", "canonical": "#f59e0b", "tonalRamp": ["oklch(0.25 0.06 75)", "oklch(0.35 0.08 75)", "oklch(0.48 0.1 75)", "oklch(0.6 0.1 75)", "oklch(0.72 0.09 75)", "oklch(0.82 0.07 75)", "oklch(0.9 0.05 75)", "oklch(0.96 0.02 75)"] },
+      "surface": { "role": "background", "displayName": "Surface White", "canonical": "oklch(0.98 0.005 280)", "tonalRamp": ["oklch(0.18 0.01 280)", "oklch(0.3 0.01 280)", "oklch(0.45 0.01 280)", "oklch(0.6 0.01 280)", "oklch(0.75 0.01 280)", "oklch(0.85 0.008 280)", "oklch(0.93 0.006 280)", "oklch(0.98 0.005 280)"] }
+    },
+    "typographyMeta": {
+      "display-lg": { "displayName": "Display Large", "purpose": "Page-level headings. Used once per page." },
+      "headline-md": { "displayName": "Headline", "purpose": "Section titles, modal headers." },
+      "headline-sm": { "displayName": "Headline Small", "purpose": "Card titles, subsection headers." },
+      "body-md": { "displayName": "Body", "purpose": "Standard text — table cells, descriptions, comments." },
+      "label-md": { "displayName": "Label", "purpose": "Table headers, metadata labels, button text." },
+      "code-sm": { "displayName": "Code", "purpose": "User IDs, report IDs, version numbers, timestamps." }
+    },
+    "shadows": [
+      { "name": "modal-dropdown", "value": "0 10px 15px -3px rgba(0,0,0,0.05)", "purpose": "Soft ambient shadow for modals, dropdowns, popovers." }
+    ],
+    "motion": [
+      { "name": "ease-hover", "value": "cubic-bezier(0.4, 0, 0.2, 1)", "purpose": "Easing for hover and focus transitions (200ms)." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Primary call to action. Used once per view.",
+      "html": "<button class=\"ds-btn-primary\">Create Report</button>",
+      "css": ".ds-btn-primary { background: #00288e; color: #ffffff; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: 0.02em; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; transition: background 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-primary:hover { background: #1e40af; } .ds-btn-primary:focus-visible { outline: 2px solid #00288e; outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Alternative action alongside primary.",
+      "html": "<button class=\"ds-btn-secondary\">Cancel</button>",
+      "css": ".ds-btn-secondary { background: #ffffff; color: #1a1b22; font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: 0.02em; padding: 12px 24px; border: 1px solid #c4c5d5; border-radius: 4px; cursor: pointer; transition: background 0.2s cubic-bezier(0.4,0,0.2,1); } .ds-btn-secondary:hover { background: #f4f2fc; } .ds-btn-secondary:focus-visible { outline: 2px solid #00288e; outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "input-text",
+      "description": "Standard text input for forms and search.",
+      "html": "<div><label class=\"ds-label\">Email Address</label><input class=\"ds-input\" type=\"email\" placeholder=\"name@company.com\"></div>",
+      "css": ".ds-label { font-family: Inter, sans-serif; font-size: 12px; font-weight: 600; line-height: 16px; letter-spacing: 0.02em; color: #1a1b22; display: block; margin-bottom: 4px; } .ds-input { width: 100%; background: #ffffff; color: #1a1b22; font-family: Inter, sans-serif; font-size: 14px; line-height: 20px; padding: 8px 12px; border: 1px solid #c4c5d5; border-radius: 4px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box; } .ds-input:focus { border-color: #00288e; box-shadow: 0 0 0 2px rgba(0,40,142,0.1); } .ds-input::placeholder { color: #c4c5d5; }"
+    },
+    {
+      "name": "Status Badge — Pending",
+      "kind": "chip",
+      "refersTo": "badge-pending",
+      "description": "PENDING workflow status indicator.",
+      "html": "<span class=\"ds-badge ds-badge-pending\">PENDING</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-family: Inter, sans-serif; font-size: 12px; line-height: 16px; white-space: nowrap; } .ds-badge-pending { background: #fef3c7; color: #92400e; }"
+    },
+    {
+      "name": "Status Badge — Approved",
+      "kind": "chip",
+      "refersTo": "badge-approved",
+      "description": "APPROVED workflow status indicator.",
+      "html": "<span class=\"ds-badge ds-badge-approved\">APPROVED</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-family: Inter, sans-serif; font-size: 12px; line-height: 16px; white-space: nowrap; } .ds-badge-approved { background: #d1fae5; color: #065f46; }"
+    },
+    {
+      "name": "Status Badge — Rejected",
+      "kind": "chip",
+      "refersTo": "badge-rejected",
+      "description": "REJECTED workflow status indicator.",
+      "html": "<span class=\"ds-badge ds-badge-rejected\">REJECTED</span>",
+      "css": ".ds-badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 9999px; font-family: Inter, sans-serif; font-size: 12px; line-height: 16px; white-space: nowrap; } .ds-badge-rejected { background: #ffdad6; color: #93000a; }"
+    },
+    {
+      "name": "Data Table Row",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Standard table row with hover state.",
+      "html": "<table style=\"width:100%;border-collapse:collapse;font-family:Inter,sans-serif;font-size:14px;\"><thead><tr style=\"background:#f4f2fc;\"><th style=\"padding:8px 12px;text-align:left;font-size:12px;font-weight:600;letter-spacing:0.02em;color:#444653;border-bottom:1px solid #c4c5d5;\">Title</th><th style=\"padding:8px 12px;text-align:left;font-size:12px;font-weight:600;letter-spacing:0.02em;color:#444653;border-bottom:1px solid #c4c5d5;\">Status</th></tr></thead><tbody><tr style=\"border-bottom:1px solid #c4c5d5;transition:background 0.2s;\" class=\"ds-row\"><td style=\"padding:12px;color:#1a1b22;\">Q3 Financial Audit</td><td style=\"padding:12px;\"><span style=\"display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;background:#fef3c7;color:#92400e;font-size:12px;\">PENDING</span></td></tr></tbody></table><style>.ds-row:hover { background: #e8e7f1; }</style>"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Sidebar navigation link.",
+      "html": "<nav style=\"width:256px;background:#ffffff;border-right:1px solid #c4c5d5;padding:8px;font-family:Inter,sans-serif;\"><a style=\"display:flex;align-items:center;gap:16px;padding:8px 16px;border-radius:4px;background:#d0e1fb;color:#54647a;font-size:14px;font-weight:700;text-decoration:none;transition:background 0.2s;\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/></svg>Dashboard</a></nav>"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Corporate Atelier",
+    "overview": "A precise and trustworthy tool. Every pixel in its right place. The interface feels like a well-organized workspace where nothing is surprising and everything is where you expect it — like a craftsman's bench arranged for efficiency, not decoration. ReportFlow is designed for high-density information environments where clarity, speed of comprehension, and reliability are paramount. The brand personality is authoritative yet secondary to the data it presents; the UI acts as a precise tool rather than a decorative layer.",
+    "keyCharacteristics": [
+      "Systematic Minimalism — rigorous grid, deliberate whitespace, restrained color",
+      "Tonal layering over shadows — depth through color shifts, not drop shadows",
+      "Status as signal — color is reserved for workflow state, never decoration",
+      "Professional restraint — one accent color (Corporate Blue) used on ≤10% of surface area"
+    ],
+    "rules": [
+      { "name": "The One Voice Rule", "body": "Primary blue is used on ≤10% of any given screen. Its rarity is the point — it directs attention to exactly one action per view.", "section": "colors" },
+      { "name": "The Status-Only Rule", "body": "Emerald, amber, and rose are reserved exclusively for workflow status signals. Never use them for decorative elements, link colors, or UI chrome.", "section": "colors" },
+      { "name": "The Density Rule", "body": "Body text never exceeds 14px in data views. The 12px label scale handles all metadata. This keeps data tables dense enough to be scannable without forcing horizontal scroll.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest. Shadows appear only as a response to state (hover, focus) or for modals and dropdowns. A shadow on a resting card is a design error.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use tonal layering for depth. Surface-container-low → surface-container → surface-container-high replaces shadows.",
+      "Do use the primary blue sparingly (≤10% of screen). Its rarity signals what matters.",
+      "Do keep tables dense. body-md (14px) for content, label-md (12px) for headers. Consistent 8px vertical padding.",
+      "Do pillar badges for status. Full-radius pill, 10% semantic background, full-color text.",
+      "Do show empty states with a brief message and the primary CTA when applicable.",
+      "Do use Inter with tabular numbers in data columns so figures align vertically."
+    ],
+    "donts": [
+      "Don't use Material Design patterns — no floating action buttons, no heavy card shadows, no bottom navigation.",
+      "Don't apply border-left or border-right greater than 1px as a colored accent stripe on cards or list items. Use full borders, background tints, or nothing.",
+      "Don't use gradient text (background-clip: text). One solid color. Emphasis via weight or size.",
+      "Don't wrap everything in cards. Cards are for grouped data, not for every surface.",
+      "Don't use emerald, amber, or rose for anything other than workflow status. They are signal, not decoration.",
+      "Don't nest cards. A card inside a card is always wrong.",
+      "Don't use the hero-metric template (big number, small label, supporting stat) — it is a SaaS cliché.",
+      "Don't show audit trails in modals by default. The audit timeline should be visible inline or in a dedicated panel."
+    ]
+  }
+}

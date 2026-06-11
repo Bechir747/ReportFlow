@@ -1,15 +1,26 @@
 import { useState, useEffect } from "react";
 import api from "../api/client";
-import type { Report, AuditLogEntry } from "../types";
-import NotificationBell from "../components/NotificationBell";
+import type { Report, AuditLogEntry, User } from "../types";
+import { useToast } from "../contexts/ToastContext";
+import Button from "../components/Button";
+import Input from "../components/Input";
+import Modal from "../components/Modal";
+import StatusBadge from "../components/StatusBadge";
+import PriorityBadge from "../components/PriorityBadge";
+import Table from "../components/Table";
 
 export default function AdminDashboard() {
   const [reports, setReports] = useState<Report[]>([]);
-  const [showCreate, setShowCreate] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [priorityFilter, setPriorityFilter] = useState("");
+  const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
   const [auditReport, setAuditReport] = useState<Report | null>(null);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  const [auditLoading, setAuditLoading] = useState(false);
   const [form, setForm] = useState({
     title: "",
     type: "",
@@ -19,176 +30,425 @@ export default function AdminDashboard() {
     due_date: "",
     depositor_id: "",
   });
+  const [depositors, setDepositors] = useState<User[]>([]);
+  const [depositorsLoading, setDepositorsLoading] = useState(true);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const { addToast } = useToast();
 
   useEffect(() => {
-    fetchReports();
-  }, [statusFilter, priorityFilter]);
-
-  const fetchReports = async () => {
+    const controller = new AbortController();
+    setLoading(true);
     const params: Record<string, string> = {};
     if (statusFilter) params.status = statusFilter;
     if (priorityFilter) params.priority = priorityFilter;
-    const res = await api.get("/reports", { params });
-    setReports(res.data);
+    api.get("/reports", { params, signal: controller.signal }).then((res) => {
+      setReports(res.data);
+      setLoading(false);
+    }).catch((_err) => {
+      if (controller.signal.aborted) return;
+      addToast("Couldn't load reports. Check your connection and try again.", "error");
+      setLoading(false);
+    });
+    return () => controller.abort();
+  }, [statusFilter, priorityFilter, addToast]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    api.get("/users", { params: { role: "DEPOSITOR" }, signal: controller.signal }).then((res) => {
+      setDepositors(res.data);
+      setDepositorsLoading(false);
+    }).catch(() => {
+      setDepositors([]);
+      setDepositorsLoading(false);
+    });
+    return () => controller.abort();
+  }, []);
+
+  const searchActive = search.trim().length > 0;
+  const filtered = searchActive
+    ? reports.filter(
+        (r) =>
+          r.title.toLowerCase().includes(search.toLowerCase()) ||
+          r.type.toLowerCase().includes(search.toLowerCase())
+      )
+    : reports;
+
+  const validateForm = () => {
+    const errs: Record<string, string> = {};
+    if (!form.title.trim()) errs.title = "Title is required";
+    if (!form.type.trim()) errs.type = "Type is required";
+    if (!form.activation_date) errs.activation_date = "Required";
+    if (!form.reminder_date) errs.reminder_date = "Required";
+    if (!form.due_date) errs.due_date = "Required";
+    if (!form.depositor_id.trim()) errs.depositor_id = "Required";
+    if (form.activation_date && form.due_date && form.activation_date >= form.due_date) {
+      errs.due_date = "Due date must be after activation date";
+    }
+    if (form.activation_date && form.reminder_date && form.activation_date >= form.reminder_date) {
+      errs.reminder_date = "Reminder must be after activation";
+    }
+    if (form.reminder_date && form.due_date && form.reminder_date >= form.due_date) {
+      errs.due_date = "Due date must be after reminder";
+    }
+    setFormErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
   const createReport = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!validateForm()) return;
+    setCreating(true);
     try {
       await api.post("/reports", form);
       setShowCreate(false);
       setForm({ title: "", type: "", priority: "MEDIUM", activation_date: "", reminder_date: "", due_date: "", depositor_id: "" });
-      fetchReports();
-    } catch (err) {
-      console.error("Failed to create report", err);
+      setFormErrors({});
+      addToast("Report created", "success");
+      const res = await api.get("/reports");
+      setReports(res.data);
+    } catch {
+      addToast("Couldn't create report. Verify all fields and try again.", "error");
+    } finally {
+      setCreating(false);
     }
   };
 
   const deleteReport = async (id: string) => {
-    if (!confirm("Delete this report?")) return;
+    if (!window.confirm("Delete this report? This cannot be undone.")) return;
+    setDeleting(id);
     try {
       await api.delete(`/reports/${id}`);
-      fetchReports();
+      addToast("Report deleted", "success");
+      setReports((prev) => prev.filter((r) => r.id !== id));
     } catch {
-      alert("Delete failed");
+      addToast("Couldn't delete report. Try again.", "error");
+    } finally {
+      setDeleting(null);
     }
   };
 
   const viewAuditLog = async (report: Report) => {
     setAuditReport(report);
+    setAuditLoading(true);
     try {
       const res = await api.get(`/reports/${report.id}/audit`);
       setAuditLog(res.data);
     } catch {
       setAuditLog([]);
+      addToast("Couldn't load audit log. Try again.", "error");
+    } finally {
+      setAuditLoading(false);
     }
   };
 
-  return (
-    <div>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 16 }}>
-        <h1>Admin Dashboard</h1>
-        <NotificationBell />
-      </header>
+  const columns = [
+    { key: "title", label: "Title" },
+    { key: "type", label: "Type", width: "120px" },
+    { key: "priority", label: "Priority", width: "100px" },
+    { key: "status", label: "Status", width: "110px" },
+    { key: "depositor", label: "Depositor", width: "110px" },
+    { key: "due", label: "Due", width: "110px" },
+    { key: "actions", label: "", width: "180px" },
+  ];
 
-      <div style={{ display: "flex", gap: 8, padding: "0 16px", marginBottom: 16 }}>
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+  const rows = filtered.map((r) => ({
+    title: r.title,
+    type: r.type,
+    priority: <PriorityBadge priority={r.priority} />,
+    status: <StatusBadge status={r.status} />,
+    depositor: (
+      <span style={{ font: "var(--font-code-sm)", color: "var(--color-on-surface-variant)" }}>
+        {r.depositor_id.slice(0, 8)}
+      </span>
+    ),
+    due: (
+      <span style={{ color: new Date(r.due_date) < new Date() ? "var(--color-error)" : "inherit" }}>
+        {new Date(r.due_date).toLocaleDateString()}
+      </span>
+    ),
+    actions: (
+      <div style={{ display: "flex", gap: "var(--space-xs)" }}>
+        {!r.is_active && !r.status && (
+          <Button
+            variant="secondary"
+            style={{ fontSize: 12, padding: "4px 10px" }}
+            onClick={async (e) => {
+              e.stopPropagation();
+              try {
+                await api.post(`/reports/${r.id}/activate`);
+                addToast("Report activated", "success");
+                const res = await api.get("/reports");
+                setReports(res.data);
+              } catch {
+                addToast("Couldn't update report status. Try again.", "error");
+              }
+            }}
+          >
+            Activate
+          </Button>
+        )}
+        <Button
+          variant="ghost"
+          style={{ fontSize: 12, padding: "4px 10px" }}
+          onClick={(e) => { e.stopPropagation(); viewAuditLog(r); }}
+        >
+          Audit
+        </Button>
+        <Button
+          variant="danger"
+          style={{ fontSize: 12, padding: "4px 10px" }}
+          loading={deleting === r.id}
+          onClick={(e) => { e.stopPropagation(); deleteReport(r.id); }}
+        >
+          Delete
+        </Button>
+      </div>
+    ),
+  }));
+
+  return (
+    <>
+      <div style={{ display: "flex", gap: "var(--space-md)", marginBottom: "var(--space-lg)", alignItems: "flex-end", flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 240, maxWidth: 320 }}>
+          <input
+            placeholder="Search reports..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: "100%",
+              padding: "8px 12px",
+              borderRadius: "var(--rounded-sm)",
+              border: "1px solid var(--color-outline-variant)",
+              font: "var(--font-body-md)",
+              outline: "none",
+              transition: "border var(--transition-fast), box-shadow var(--transition-fast)",
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = "var(--color-primary)";
+              e.currentTarget.style.boxShadow = "0 0 0 2px color-mix(in srgb, var(--color-primary) 15%, transparent)";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = "var(--color-outline-variant)";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "var(--rounded-sm)",
+            border: "1px solid var(--color-outline-variant)",
+            font: "var(--font-body-md)",
+            background: "var(--color-surface-container-lowest)",
+            outline: "none",
+            cursor: "pointer",
+            transition: "border var(--transition-fast), box-shadow var(--transition-fast)",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "var(--color-primary)";
+            e.currentTarget.style.boxShadow = "0 0 0 2px color-mix(in srgb, var(--color-primary) 15%, transparent)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "var(--color-outline-variant)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
           <option value="">All Statuses</option>
-          <option value="PENDING">PENDING</option>
-          <option value="APPROVED">APPROVED</option>
-          <option value="REJECTED">REJECTED</option>
-          <option value="TO_REDO">TO_REDO</option>
-          <option value="CANCELED">CANCELED</option>
+          <option value="PENDING">Pending</option>
+          <option value="APPROVED">Approved</option>
+          <option value="REJECTED">Rejected</option>
+          <option value="TO_REDO">To Redo</option>
+          <option value="CANCELED">Canceled</option>
         </select>
-        <select value={priorityFilter} onChange={(e) => setPriorityFilter(e.target.value)}>
+        <select
+          value={priorityFilter}
+          onChange={(e) => setPriorityFilter(e.target.value)}
+          style={{
+            padding: "8px 12px",
+            borderRadius: "var(--rounded-sm)",
+            border: "1px solid var(--color-outline-variant)",
+            font: "var(--font-body-md)",
+            background: "var(--color-surface-container-lowest)",
+            outline: "none",
+            cursor: "pointer",
+            transition: "border var(--transition-fast), box-shadow var(--transition-fast)",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = "var(--color-primary)";
+            e.currentTarget.style.boxShadow = "0 0 0 2px color-mix(in srgb, var(--color-primary) 15%, transparent)";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = "var(--color-outline-variant)";
+            e.currentTarget.style.boxShadow = "none";
+          }}
+        >
           <option value="">All Priorities</option>
-          <option value="LOW">LOW</option>
-          <option value="MEDIUM">MEDIUM</option>
-          <option value="HIGH">HIGH</option>
-          <option value="CRITICAL">CRITICAL</option>
+          <option value="LOW">Low</option>
+          <option value="MEDIUM">Medium</option>
+          <option value="HIGH">High</option>
+          <option value="CRITICAL">Critical</option>
         </select>
-        <button onClick={() => setShowCreate(!showCreate)}>
-          {showCreate ? "Cancel" : "+ New Report"}
-        </button>
+        <Button onClick={() => setShowCreate(true)}>+ New Report</Button>
       </div>
 
-      {showCreate && (
-        <form onSubmit={createReport} style={{ display: "flex", flexDirection: "column", gap: 8, maxWidth: 400, margin: "0 16px 16px", padding: 16, border: "1px solid #ccc", borderRadius: 4 }}>
-          <input placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-          <input placeholder="Type (e.g. Quarterly, Compliance)" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} required />
-          <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}>
-            <option value="LOW">Low</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HIGH">High</option>
-            <option value="CRITICAL">Critical</option>
-          </select>
-          <label>Activation Date</label>
-          <input type="datetime-local" value={form.activation_date} onChange={(e) => setForm({ ...form, activation_date: e.target.value })} required />
-          <label>Reminder Date</label>
-          <input type="datetime-local" value={form.reminder_date} onChange={(e) => setForm({ ...form, reminder_date: e.target.value })} required />
-          <label>Due Date</label>
-          <input type="datetime-local" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} required />
-          <input placeholder="Depositor User ID" value={form.depositor_id} onChange={(e) => setForm({ ...form, depositor_id: e.target.value })} required />
-          <button type="submit">Create Report</button>
-        </form>
-      )}
-
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "#f5f5f5" }}>
-            <th style={thStyle}>Title</th>
-            <th style={thStyle}>Type</th>
-            <th style={thStyle}>Priority</th>
-            <th style={thStyle}>Status</th>
-            <th style={thStyle}>Depositor</th>
-            <th style={thStyle}>Active</th>
-            <th style={thStyle}>Due</th>
-            <th style={thStyle}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {reports.length === 0 && (
-            <tr><td colSpan={8} style={{ textAlign: "center", padding: 24, color: "#888" }}>No reports found</td></tr>
-          )}
-          {reports.map((r) => (
-            <tr key={r.id} style={{ borderBottom: "1px solid #eee" }}>
-              <td style={tdStyle}>{r.title}</td>
-              <td style={tdStyle}>{r.type}</td>
-              <td style={tdStyle}><PriorityBadge priority={r.priority} /></td>
-              <td style={tdStyle}><StatusBadge status={r.status} /></td>
-              <td style={{ ...tdStyle, fontFamily: "monospace", fontSize: 12 }}>{r.depositor_id.slice(0, 8)}</td>
-              <td style={tdStyle}>{r.is_active ? "✅" : "❌"}</td>
-              <td style={tdStyle}>{new Date(r.due_date).toLocaleDateString()}</td>
-              <td style={tdStyle}>
-                {!r.is_active && !r.status && (
-                  <button onClick={async () => { try { await api.post(`/reports/${r.id}/activate`); fetchReports(); } catch { alert("Activate failed"); } }} style={{ color: "green", marginRight: 4 }}>Activate</button>
-                )}
-                <button onClick={() => viewAuditLog(r)}>Audit</button>
-                <button onClick={() => deleteReport(r.id)} style={{ color: "red", marginLeft: 4 }}>Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {auditReport && (
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000 }}>
-          <div style={{ background: "white", padding: 24, maxWidth: 700, width: "90%", maxHeight: "80vh", overflowY: "auto", borderRadius: 8 }}>
-            <h2>Audit Log: {auditReport.title}</h2>
-            <button onClick={() => setAuditReport(null)} style={{ float: "right" }}>Close</button>
-            {auditLog.length === 0 && <p>No audit entries found.</p>}
-            <div style={{ position: "relative", paddingLeft: 24 }}>
-              {auditLog.map((entry, i) => (
-                <div key={entry.id} style={{ borderLeft: "2px solid #ddd", paddingLeft: 16, paddingBottom: 16, position: "relative" }}>
-                  <div style={{ position: "absolute", left: -7, top: 0, width: 12, height: 12, borderRadius: "50%", background: "#666" }} />
-                  <small style={{ color: "#888" }}>{new Date(entry.created_at).toLocaleString()}</small>
-                  <p style={{ margin: "4px 0" }}>
-                    <strong>{entry.action}</strong>
-                    {entry.from_status && <span> — {entry.from_status} → {entry.to_status}</span>}
-                    {!entry.from_status && entry.to_status && <span> → {entry.to_status}</span>}
-                  </p>
-                  <small style={{ color: "#888", fontFamily: "monospace" }}>by {entry.actor_id.slice(0, 8)}</small>
-                  {entry.extra_data && <pre style={{ fontSize: 11, background: "#f9f9f9", padding: 4 }}>{JSON.stringify(entry.extra_data, null, 2)}</pre>}
-                </div>
-              ))}
-            </div>
+      {loading ? (
+          <div role="status" aria-label="Loading" style={{ padding: "var(--space-xl)", textAlign: "center", color: "var(--color-on-surface-variant)" }}>
+            Loading...
           </div>
-        </div>
+      ) : (
+        <Table
+          columns={columns}
+          rows={rows}
+          emptyMessage={reports.length === 0 ? "No reports yet. Create your first report to get started." : "No reports match your filters"}
+          emptyAction={<Button onClick={() => setShowCreate(true)}>Create Report</Button>}
+        />
       )}
-    </div>
+
+      <Modal open={showCreate} onClose={() => { setShowCreate(false); setFormErrors({}); }} title="Create Report">
+        <form onSubmit={createReport} style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+          <Input label="Title" maxLength={100} value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} error={formErrors.title} required />
+          <Input label="Type" placeholder="Quarterly, Compliance..." maxLength={100} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} error={formErrors.type} required />
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+            <label style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Priority</label>
+            <select
+              value={form.priority}
+              onChange={(e) => setForm({ ...form, priority: e.target.value })}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "var(--rounded-sm)",
+                border: "1px solid var(--color-outline-variant)",
+                font: "var(--font-body-md)",
+                background: "var(--color-surface-container-lowest)",
+                outline: "none",
+                cursor: "pointer",
+                transition: "border var(--transition-fast), box-shadow var(--transition-fast)",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "var(--color-primary)";
+                e.currentTarget.style.boxShadow = "0 0 0 2px color-mix(in srgb, var(--color-primary) 15%, transparent)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "var(--color-outline-variant)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="CRITICAL">Critical</option>
+            </select>
+          </div>
+          <Input label="Activation Date" type="datetime-local" value={form.activation_date} onChange={(e) => setForm({ ...form, activation_date: e.target.value })} error={formErrors.activation_date} required />
+          <Input label="Reminder Date" type="datetime-local" value={form.reminder_date} onChange={(e) => setForm({ ...form, reminder_date: e.target.value })} error={formErrors.reminder_date} required />
+          <Input label="Due Date" type="datetime-local" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} error={formErrors.due_date} required />
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+            <label style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Depositor <span style={{ color: "var(--color-error)" }}>*</span></label>
+            <select
+              value={form.depositor_id}
+              onChange={(e) => setForm({ ...form, depositor_id: e.target.value })}
+              disabled={depositorsLoading}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "var(--rounded-sm)",
+                border: `1px solid ${formErrors.depositor_id ? "var(--color-error)" : "var(--color-outline-variant)"}`,
+                font: "var(--font-body-md)",
+                background: formErrors.depositor_id ? "var(--color-error-container)" : "var(--color-surface-container-lowest)",
+                color: form.depositor_id ? "var(--color-on-surface)" : "var(--color-on-surface-variant)",
+                outline: "none",
+                cursor: depositorsLoading ? "not-allowed" : "pointer",
+                transition: "border var(--transition-fast), box-shadow var(--transition-fast)",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "var(--color-primary)";
+                e.currentTarget.style.boxShadow = "0 0 0 2px color-mix(in srgb, var(--color-primary) 15%, transparent)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = formErrors.depositor_id ? "var(--color-error)" : "var(--color-outline-variant)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <option value="" disabled>{depositorsLoading ? "Loading depositors..." : "Select a depositor"}</option>
+              {depositors.map((d) => (
+                <option key={d.id} value={d.id}>{d.email}</option>
+              ))}
+            </select>
+            {formErrors.depositor_id && (
+              <span style={{ font: "var(--font-code-sm)", color: "var(--color-error)" }}>{formErrors.depositor_id}</span>
+            )}
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-sm)", marginTop: "var(--space-sm)" }}>
+            <Button variant="secondary" type="button" onClick={() => { setShowCreate(false); setFormErrors({}); }}>Cancel</Button>
+            <Button type="submit" loading={creating}>Create</Button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={!!auditReport}
+        onClose={() => setAuditReport(null)}
+        title={`Audit Log${auditReport ? `: ${auditReport.title}` : ""}`}
+        width={700}
+      >
+        {auditLoading ? (
+            <p role="status" aria-label="Loading" style={{ color: "var(--color-on-surface-variant)" }}>Loading...</p>
+        ) : auditLog.length === 0 ? (
+          <p style={{ color: "var(--color-on-surface-variant)" }}>No audit entries for this report.</p>
+        ) : (
+          <div style={{ position: "relative", paddingLeft: 24 }}>
+            {auditLog.map((entry) => (
+              <div
+                key={entry.id}
+                style={{
+                  borderLeft: "2px solid var(--color-outline-variant)",
+                  paddingLeft: 16,
+                  paddingBottom: 16,
+                  position: "relative",
+                }}
+              >
+                <div
+                  style={{
+                    position: "absolute",
+                    left: -7,
+                    top: 0,
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    background: "var(--color-surface-container-high)",
+                    border: "2px solid var(--color-outline-variant)",
+                  }}
+                />
+                <small style={{ font: "var(--font-code-sm)", color: "var(--color-outline)" }}>
+                  {new Date(entry.created_at).toLocaleString()}
+                </small>
+                <p style={{ margin: "4px 0", font: "var(--font-body-md)" }}>
+                  <strong>{entry.action}</strong>
+                  {entry.from_status && <span> &mdash; {entry.from_status} &rarr; {entry.to_status}</span>}
+                  {!entry.from_status && entry.to_status && <span> &rarr; {entry.to_status}</span>}
+                </p>
+                <small style={{ font: "var(--font-code-sm)", color: "var(--color-on-surface-variant)" }}>
+                  by {entry.actor_id.slice(0, 8)}
+                </small>
+                {entry.metadata && (
+                  <pre
+                    style={{
+                      font: "var(--font-code-sm)",
+                      background: "var(--color-surface-container-low)",
+                      padding: "var(--space-sm)",
+                      borderRadius: "var(--rounded-sm)",
+                      marginTop: "var(--space-xs)",
+                      overflow: "auto",
+                    }}
+                  >
+                    {JSON.stringify(entry.metadata, null, 2)}
+                  </pre>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </Modal>
+    </>
   );
 }
-
-function PriorityBadge({ priority }: { priority: string }) {
-  const colors: Record<string, string> = { LOW: "green", MEDIUM: "orange", HIGH: "red", CRITICAL: "darkred" };
-  return <span style={{ color: colors[priority] || "#888", fontWeight: "bold" }}>{priority}</span>;
-}
-
-function StatusBadge({ status }: { status: string | null }) {
-  if (!status) return <span style={{ color: "#888" }}>DRAFT</span>;
-  const colors: Record<string, string> = { PENDING: "blue", APPROVED: "green", REJECTED: "red", TO_REDO: "orange", CANCELED: "gray" };
-  return <span style={{ color: colors[status] || "#888", fontWeight: "bold" }}>{status}</span>;
-}
-
-const thStyle: React.CSSProperties = { textAlign: "left", padding: "8px 12px", borderBottom: "2px solid #ddd" };
-const tdStyle: React.CSSProperties = { padding: "8px 12px" };
