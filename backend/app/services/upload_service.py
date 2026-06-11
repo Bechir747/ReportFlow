@@ -28,9 +28,9 @@ class UploadService:
         if report.depositor_id != actor_id:
             raise ValueError("Only the assigned depositor can upload")
 
+        if not report.is_active:
+            raise ValueError("Report is not active")
         now = datetime.now(timezone.utc)
-        if now < report.activation_date:
-            raise ValueError("Report is not yet active")
         if now > report.due_date:
             raise ValueError("Submission deadline has passed")
 

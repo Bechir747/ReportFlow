@@ -155,7 +155,7 @@ export default function AdminDashboard() {
     title: r.title,
     type: r.type,
     priority: <PriorityBadge priority={r.priority} />,
-    status: <StatusBadge status={r.status} />,
+    status: <StatusBadge status={r.status} isActive={r.is_active} />,
     depositor: (
       <span style={{ font: "var(--font-code-sm)", color: "var(--color-on-surface-variant)" }}>
         {r.depositor_id.slice(0, 8)}

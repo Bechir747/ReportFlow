@@ -87,7 +87,7 @@ export default function ApproverDashboard() {
     title: r.title,
     type: r.type,
     priority: <PriorityBadge priority={r.priority} />,
-    status: <StatusBadge status={r.status} />,
+    status: <StatusBadge status={r.status} isActive={r.is_active} />,
     submitted: (
       <span style={{ font: "var(--font-body-md)" }}>
         {new Date(r.created_at).toLocaleDateString()}
@@ -150,7 +150,7 @@ export default function ApproverDashboard() {
               </div>
               <div>
                 <span style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Status</span>
-                <div style={{ marginTop: 2 }}><StatusBadge status={selectedReport.status} /></div>
+                <div style={{ marginTop: 2 }}><StatusBadge status={selectedReport.status} isActive={selectedReport.is_active} /></div>
               </div>
               <div>
                 <span style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Submitted</span>

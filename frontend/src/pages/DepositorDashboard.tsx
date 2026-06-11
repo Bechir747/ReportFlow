@@ -77,7 +77,7 @@ export default function DepositorDashboard() {
   const rows = reports.map((r) => ({
     title: r.title,
     type: r.type,
-    status: <StatusBadge status={r.status} />,
+    status: <StatusBadge status={r.status} isActive={r.is_active} />,
     priority: <PriorityBadge priority={r.priority} />,
     due: (
       <span style={{ color: new Date(r.due_date) < new Date() ? "var(--color-error)" : "inherit" }}>
@@ -152,7 +152,7 @@ export default function DepositorDashboard() {
             >
               <div>
                 <span style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Status</span>
-                <div style={{ marginTop: 2 }}><StatusBadge status={selectedReport.status} /></div>
+                <div style={{ marginTop: 2 }}><StatusBadge status={selectedReport.status} isActive={selectedReport.is_active} /></div>
               </div>
               <div>
                 <span style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Priority</span>
