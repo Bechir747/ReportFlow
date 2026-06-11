@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Depositor Dashboard - ReportFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary-container": "#a8b8ff",
+                        "surface": "#fbf8ff",
+                        "on-tertiary-fixed": "#380d00",
+                        "on-secondary-fixed-variant": "#38485d",
+                        "surface-dim": "#dad9e3",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#d0e1fb",
+                        "inverse-surface": "#2f3037",
+                        "tertiary": "#611e00",
+                        "on-tertiary-container": "#ffa583",
+                        "on-primary": "#ffffff",
+                        "secondary-fixed-dim": "#b7c8e1",
+                        "surface-container-low": "#f4f2fc",
+                        "inverse-primary": "#b8c4ff",
+                        "on-primary-fixed-variant": "#173bab",
+                        "on-secondary-fixed": "#0b1c30",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#b8c4ff",
+                        "on-surface-variant": "#444653",
+                        "primary": "#00288e",
+                        "surface-bright": "#fbf8ff",
+                        "error": "#ba1a1a",
+                        "surface-container": "#eeedf7",
+                        "outline-variant": "#c4c5d5",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#ffb59a",
+                        "secondary-fixed": "#d3e4fe",
+                        "surface-container-highest": "#e3e1eb",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary-container": "#872d00",
+                        "on-primary-fixed": "#001453",
+                        "on-surface": "#1a1b22",
+                        "inverse-on-surface": "#f1f0fa",
+                        "on-error": "#ffffff",
+                        "outline": "#757684",
+                        "background": "#fbf8ff",
+                        "on-background": "#1a1b22",
+                        "surface-tint": "#3755c3",
+                        "tertiary-fixed": "#ffdbce",
+                        "primary-container": "#1e40af",
+                        "on-tertiary-fixed-variant": "#802a00",
+                        "on-secondary-container": "#54647a",
+                        "primary-fixed": "#dde1ff",
+                        "secondary": "#505f76",
+                        "surface-container-high": "#e8e7f1",
+                        "surface-variant": "#e3e1eb"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "md": "16px",
+                        "xl": "32px",
+                        "sm": "8px",
+                        "margin-desktop": "32px",
+                        "gutter": "20px",
+                        "base": "4px",
+                        "xs": "4px",
+                        "margin-mobile": "16px",
+                        "lg": "24px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-sm": ["Inter"],
+                        "display-lg-mobile": ["Inter"],
+                        "code-sm": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "display-lg": ["Inter"],
+                        "body-lg": ["Inter"]
+                    },
+                    "fontSize": {
+                        "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "code-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }],
+                        "display-lg": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined[data-weight="fill"] {
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        /* Custom Upload Area Drag State */
+        .upload-area.drag-active {
+            border-color: theme('colors.primary');
+            background-color: theme('colors.surface-container');
+        }
+        
+        /* Table Row Hover Layering */
+        .table-row-hover:hover {
+            background-color: theme('colors.surface-container-high');
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen flex overflow-hidden">
+<!-- SideNavBar (Shared Component) -->
+<aside class="docked h-full w-64 left-0 border-r border-outline-variant bg-surface flex flex-col py-md px-sm z-30 flex-shrink-0">
+<!-- Header -->
+<div class="px-md mb-xl flex items-center gap-md">
+<div class="w-8 h-8 rounded bg-primary flex items-center justify-center text-on-primary">
+<span class="material-symbols-outlined text-[20px]" data-weight="fill">account_tree</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">ReportFlow</h1>
+<p class="font-label-md text-label-md text-on-surface-variant font-normal">Enterprise Workflow</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex flex-col gap-xs flex-1">
+<!-- Active Tab: Dashboard -->
+<a class="flex items-center gap-md px-md py-sm rounded-lg bg-secondary-container text-on-secondary-container font-bold scale-95 duration-150 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md">Dashboard</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span class="font-label-md text-label-md">Reports</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="font-label-md text-label-md">Notifications</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors scale-95 duration-150" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="font-label-md text-label-md">User Management</span>
+</a>
+</nav>
+<!-- Bottom Settings/Profile snippet in sidebar could go here, but omitted to match JSON strictly -->
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col min-w-0">
+<!-- TopNavBar (Shared Component) -->
+<header class="docked full-width top-0 border-b border-outline-variant bg-surface flex justify-between items-center h-16 px-xl w-full z-40 flex-shrink-0">
+<!-- Search Bar on Left -->
+<div class="flex-1 max-w-md">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant rounded pl-10 pr-4 py-2 font-body-md text-body-md text-on-surface focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all" placeholder="Search reports, IDs, or status..." type="text"/>
+</div>
+</div>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-md">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low transition-colors relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span>
+</button>
+<div class="h-8 w-px bg-outline-variant mx-sm"></div>
+<button class="flex items-center gap-sm hover:bg-surface-container-low p-sm rounded-lg transition-colors">
+<img alt="User Avatar" class="w-8 h-8 rounded-full border border-outline-variant" data-alt="A professional headshot of a corporate woman in a bright, modern office setting, representing a user profile avatar. The lighting is clean and soft, fitting a light-mode enterprise UI style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCk8XFIjoaMZNi56MFz3ANhzYxKcRLqR8eFp4TA6CscEXpT2JkA4ZdanIQpsa5O5r-9qHlkKYF1XCzyfVhmsBEbM1rft6qqgnQKp6PzzlFLzr9Ulzd_xMgYsDwx-NtHv8nK4nqweSIAHCUqK6be-XYZlj7mjrRdpEut4rw2d2vCyYZi8tZo4ranzTR5hjRWUgSrdQt1YSUp77vDQZ5oRqeQYkzgWRC52ccP3XTzMWwWUVQu7iTHE5ei3UVVSZ1yvtW-egG5280DbSQJ"/>
+<span class="font-label-md text-label-md text-on-surface hidden md:block">Profile</span>
+<span class="material-symbols-outlined text-outline-variant">expand_more</span>
+</button>
+</div>
+</header>
+<!-- Main Scrollable Area -->
+<main class="flex-1 overflow-y-auto bg-background pb-xl">
+<!-- Fluid Grid Layout -->
+<div class="max-w-7xl mx-auto w-full px-margin-mobile md:px-margin-desktop py-lg grid grid-cols-4 md:grid-cols-12 gap-gutter">
+<!-- Welcome Banner (Full Width) -->
+<div class="col-span-4 md:col-span-12 mb-md">
+<h2 class="font-display-lg text-display-lg text-on-surface">Welcome back, Sarah</h2>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-sm">You have 2 reports requiring your immediate attention.</p>
+</div>
+<!-- Bento Grid Left Column: Action Required & Upload -->
+<div class="col-span-4 md:col-span-12 lg:col-span-8 flex flex-col gap-gutter">
+<!-- Action Required Card (Highlight) -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-lg flex flex-col relative overflow-hidden">
+<!-- Decorative top line indicating urgency -->
+<div class="absolute top-0 left-0 w-full h-1 bg-error"></div>
+<div class="flex justify-between items-start mb-md">
+<div>
+<div class="flex items-center gap-sm mb-xs">
+<span class="font-label-md text-label-md px-sm py-xs rounded-full bg-error-container text-on-error-container inline-flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                                        ACTION REQUIRED: TO_REDO
+                                    </span>
+<span class="font-code-sm text-code-sm text-on-surface-variant">ID: RPT-2023-09A</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface">Q3 Regulatory Compliance Disclosure</h3>
+</div>
+<div class="text-right">
+<p class="font-label-md text-label-md text-outline">DEADLINE</p>
+<p class="font-body-md text-body-md text-error font-bold">Today, 5:00 PM</p>
+</div>
+</div>
+<!-- Reviewer Comments Snippet -->
+<div class="bg-surface-container-low border-l-4 border-error p-md rounded-r mb-lg">
+<p class="font-label-md text-label-md text-on-surface font-bold mb-xs">Reviewer Notes (Compliance Team):</p>
+<p class="font-body-md text-body-md text-on-surface-variant">"Section 4.2 regarding secondary risk vectors is incomplete. Please append the missing data tables and re-upload before EOD."</p>
+</div>
+<!-- Upload Interface -->
+<div class="border-2 border-dashed border-outline-variant bg-surface-container-low rounded-lg p-xl flex flex-col items-center justify-center gap-md upload-area transition-all" id="drop-zone">
+<div class="w-12 h-12 rounded-full bg-surface-container-high flex items-center justify-center text-primary mb-xs">
+<span class="material-symbols-outlined text-[24px]">cloud_upload</span>
+</div>
+<div class="text-center">
+<p class="font-headline-sm text-headline-sm text-on-surface">Drag &amp; drop revised report here</p>
+<p class="font-body-md text-body-md text-on-surface-variant mt-xs">or click to browse from your computer (PDF, DOCX)</p>
+</div>
+<button class="bg-primary text-on-primary rounded font-label-md px-lg py-sm hover:bg-primary-container transition-colors mt-sm">
+                                Select File
+                            </button>
+</div>
+<!-- Version History Summary (Inside the active card context) -->
+<div class="mt-lg pt-md border-t border-outline-variant">
+<h4 class="font-label-md text-label-md text-on-surface mb-sm">VERSION HISTORY</h4>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="font-label-md text-label-md text-on-surface-variant py-xs px-sm w-16">Ver</th>
+<th class="font-label-md text-label-md text-on-surface-variant py-xs px-sm">File Name</th>
+<th class="font-label-md text-label-md text-on-surface-variant py-xs px-sm w-48">Timestamp</th>
+<th class="font-label-md text-label-md text-on-surface-variant py-xs px-sm w-32">Status</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md">
+<tr class="border-b border-outline-variant table-row-hover transition-colors">
+<td class="py-sm px-sm text-on-surface-variant">v2</td>
+<td class="py-sm px-sm text-on-surface">Q3_Disclosure_Rev1.pdf</td>
+<td class="py-sm px-sm text-on-surface-variant">Oct 24, 09:15 AM</td>
+<td class="py-sm px-sm">
+<span class="px-2 py-1 rounded text-[10px] font-bold bg-error-container text-on-error-container">REJECTED</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant table-row-hover transition-colors">
+<td class="py-sm px-sm text-on-surface-variant">v1</td>
+<td class="py-sm px-sm text-on-surface">Q3_Disclosure_Initial.pdf</td>
+<td class="py-sm px-sm text-on-surface-variant">Oct 22, 14:30 PM</td>
+<td class="py-sm px-sm">
+<span class="px-2 py-1 rounded text-[10px] font-bold bg-secondary-container text-on-secondary-container">SUPERSEDED</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+<!-- Bento Grid Right Column: Assigned Reports List & Status -->
+<div class="col-span-4 md:col-span-12 lg:col-span-4 flex flex-col gap-gutter">
+<!-- My Assigned Reports Table -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex flex-col h-full">
+<div class="p-md border-b border-outline-variant bg-surface flex justify-between items-center">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">My Assigned Reports</h3>
+<button class="text-primary font-label-md text-label-md hover:underline">View All</button>
+</div>
+<div class="overflow-y-auto flex-1 p-0">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant sticky top-0">
+<th class="font-label-md text-label-md text-on-surface-variant py-sm px-md">Report Title</th>
+<th class="font-label-md text-label-md text-on-surface-variant py-sm px-md w-32">Status</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md">
+<tr class="border-b border-outline-variant table-row-hover cursor-pointer transition-colors bg-surface-container-low">
+<td class="py-md px-md">
+<p class="font-bold text-on-surface">Q3 Regulatory Compliance</p>
+<p class="font-code-sm text-on-surface-variant mt-xs">Due: Today</p>
+</td>
+<td class="py-md px-md">
+<span class="px-2 py-1 rounded text-[10px] font-bold bg-error-container text-on-error-container">TO REDO</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant table-row-hover cursor-pointer transition-colors">
+<td class="py-md px-md">
+<p class="text-on-surface">Annual ESG Summary</p>
+<p class="font-code-sm text-on-surface-variant mt-xs">Due: Nov 15</p>
+</td>
+<td class="py-md px-md">
+<span class="px-2 py-1 rounded text-[10px] font-bold bg-secondary-container text-on-secondary-container">PENDING</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant table-row-hover cursor-pointer transition-colors">
+<td class="py-md px-md">
+<p class="text-on-surface">Oct Incident Log</p>
+<p class="font-code-sm text-on-surface-variant mt-xs">Due: Nov 01</p>
+</td>
+<td class="py-md px-md">
+<span class="px-2 py-1 rounded text-[10px] font-bold bg-secondary-container text-on-secondary-container">PENDING</span>
+</td>
+</tr>
+<tr class="border-b border-outline-variant table-row-hover cursor-pointer transition-colors opacity-60">
+<td class="py-md px-md">
+<p class="text-on-surface line-through">Q2 Financial Audit</p>
+<p class="font-code-sm text-on-surface-variant mt-xs">Submitted: Jul 10</p>
+</td>
+<td class="py-md px-md">
+<span class="px-2 py-1 rounded text-[10px] font-bold bg-surface-container-highest text-on-surface-variant">APPROVED</span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+<!-- Lightweight interaction script -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const dropZone = document.getElementById('drop-zone');
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, preventDefaults, false);
+            });
+
+            function preventDefaults (e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, unhighlight, false);
+            });
+
+            function highlight(e) {
+                dropZone.classList.add('drag-active');
+            }
+
+            function unhighlight(e) {
+                dropZone.classList.remove('drag-active');
+            }
+
+            dropZone.addEventListener('drop', handleDrop, false);
+
+            function handleDrop(e) {
+                let dt = e.dataTransfer;
+                let files = dt.files;
+                // Interaction simulation
+                if(files.length > 0) {
+                    const btn = dropZone.querySelector('button');
+                    btn.textContent = files[0].name + " (Ready to upload)";
+                    btn.classList.remove('bg-primary');
+                    btn.classList.add('bg-primary-container');
+                }
+            }
+        });
+    </script>
+</body></html>

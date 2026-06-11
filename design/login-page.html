@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ReportFlow - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary": "#ffffff",
+                    "inverse-primary": "#b8c4ff",
+                    "secondary-fixed-dim": "#b7c8e1",
+                    "on-primary": "#ffffff",
+                    "on-surface": "#1a1b22",
+                    "secondary-fixed": "#d3e4fe",
+                    "surface-tint": "#3755c3",
+                    "on-surface-variant": "#444653",
+                    "error": "#ba1a1a",
+                    "surface-variant": "#e3e1eb",
+                    "on-primary-container": "#a8b8ff",
+                    "primary-container": "#1e40af",
+                    "on-error-container": "#93000a",
+                    "tertiary-fixed-dim": "#ffb59a",
+                    "surface-container-low": "#f4f2fc",
+                    "on-secondary-fixed-variant": "#38485d",
+                    "tertiary-fixed": "#ffdbce",
+                    "secondary": "#505f76",
+                    "outline": "#757684",
+                    "outline-variant": "#c4c5d5",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-container": "#54647a",
+                    "surface": "#fbf8ff",
+                    "on-tertiary-fixed-variant": "#802a00",
+                    "surface-bright": "#fbf8ff",
+                    "primary-fixed": "#dde1ff",
+                    "primary-fixed-dim": "#b8c4ff",
+                    "on-error": "#ffffff",
+                    "inverse-on-surface": "#f1f0fa",
+                    "on-tertiary-container": "#ffa583",
+                    "on-background": "#1a1b22",
+                    "surface-container-lowest": "#ffffff",
+                    "secondary-container": "#d0e1fb",
+                    "surface-container": "#eeedf7",
+                    "on-secondary-fixed": "#0b1c30",
+                    "on-primary-fixed-variant": "#173bab",
+                    "background": "#fbf8ff",
+                    "tertiary": "#611e00",
+                    "primary": "#00288e",
+                    "on-primary-fixed": "#001453",
+                    "surface-container-high": "#e8e7f1",
+                    "inverse-surface": "#2f3037",
+                    "error-container": "#ffdad6",
+                    "tertiary-container": "#872d00",
+                    "surface-container-highest": "#e3e1eb",
+                    "surface-dim": "#dad9e3",
+                    "on-tertiary-fixed": "#380d00"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "md": "16px",
+                    "base": "4px",
+                    "xl": "32px",
+                    "margin-mobile": "16px",
+                    "xs": "4px",
+                    "gutter": "20px",
+                    "lg": "24px",
+                    "margin-desktop": "32px",
+                    "sm": "8px"
+            },
+            "fontFamily": {
+                    "body-lg": [
+                            "Inter"
+                    ],
+                    "headline-md": [
+                            "Inter"
+                    ],
+                    "display-lg": [
+                            "Inter"
+                    ],
+                    "display-lg-mobile": [
+                            "Inter"
+                    ],
+                    "label-md": [
+                            "Inter"
+                    ],
+                    "headline-sm": [
+                            "Inter"
+                    ],
+                    "body-md": [
+                            "Inter"
+                    ],
+                    "code-sm": [
+                            "Inter"
+                    ]
+            },
+            "fontSize": {
+                    "body-lg": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "display-lg": [
+                            "36px",
+                            {
+                                    "lineHeight": "44px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "display-lg-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "36px",
+                                    "letterSpacing": "-0.01em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-md": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "letterSpacing": "0.02em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "body-md": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "code-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: theme('colors.background');
+        }
+        .soft-shadow {
+            box-shadow: 0px 10px 15px -3px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center bg-surface-container-low text-on-surface p-margin-mobile md:p-margin-desktop">
+<!-- Main Content Area -->
+<main class="w-full max-w-md bg-surface-container-lowest border border-outline-variant rounded-xl soft-shadow p-xl flex flex-col gap-lg z-10 relative">
+<!-- Header / Branding -->
+<header class="text-center flex flex-col gap-xs items-center">
+<div class="h-12 w-12 bg-primary rounded-lg flex items-center justify-center mb-sm">
+<span class="material-symbols-outlined text-on-primary text-2xl" style="font-variation-settings: 'FILL' 1;">
+                    flowsheet
+                 </span>
+</div>
+<h1 class="font-headline-md text-headline-md text-primary">ReportFlow</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Enterprise Workflow</p>
+</header>
+<!-- Login Form -->
+<form class="flex flex-col gap-md">
+<!-- Email Input -->
+<div class="flex flex-col gap-xs">
+<label class="font-label-md text-label-md text-on-surface" for="email">Email Address</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" style="font-variation-settings: 'FILL' 0;">
+                        mail
+                    </span>
+<input class="w-full pl-10 pr-3 py-2 bg-surface-container-lowest border border-outline-variant rounded focus:border-primary focus:ring-2 focus:ring-primary/10 font-body-md text-body-md text-on-surface transition-colors placeholder:text-outline-variant" id="email" name="email" placeholder="name@company.com" required="" type="email"/>
+</div>
+</div>
+<!-- Password Input -->
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-md text-label-md text-on-surface" for="password">Password</label>
+<a class="font-label-md text-label-md text-primary hover:text-primary-container transition-colors" href="#">Forgot password?</a>
+</div>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" style="font-variation-settings: 'FILL' 0;">
+                        lock
+                    </span>
+<input class="w-full pl-10 pr-3 py-2 bg-surface-container-lowest border border-outline-variant rounded focus:border-primary focus:ring-2 focus:ring-primary/10 font-body-md text-body-md text-on-surface transition-colors placeholder:text-outline-variant" id="password" name="password" placeholder="••••••••" required="" type="password"/>
+</div>
+</div>
+<!-- Submit Button -->
+<button class="mt-sm w-full bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md py-3 px-4 rounded transition-colors flex justify-center items-center gap-2" type="submit">
+                Sign In
+                <span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">
+                    arrow_forward
+                </span>
+</button>
+</form>
+<!-- Divider -->
+<div class="flex items-center gap-3 w-full">
+<div class="h-px bg-outline-variant flex-1"></div>
+<span class="font-label-md text-label-md text-outline">OR</span>
+<div class="h-px bg-outline-variant flex-1"></div>
+</div>
+<!-- SSO Button (Optional, typical for enterprise) -->
+<button class="w-full bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-highest text-on-surface font-label-md text-label-md py-3 px-4 rounded transition-colors flex justify-center items-center gap-2" type="button">
+<span class="material-symbols-outlined text-sm text-outline" style="font-variation-settings: 'FILL' 0;">
+                key
+            </span>
+            Sign in with SSO
+        </button>
+</main>
+<!-- Footer Links -->
+<footer class="mt-xl flex gap-md justify-center w-full max-w-md">
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Terms of Service</a>
+<span class="text-outline-variant">•</span>
+<a class="font-body-md text-body-md text-on-surface-variant hover:text-on-surface transition-colors" href="#">Privacy Policy</a>
+</footer>
+</body></html>
