@@ -26,6 +26,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     reports: Mapped[list["Report"]] = relationship("Report", back_populates="depositor", foreign_keys="Report.depositor_id")
+    approver_reports: Mapped[list["Report"]] = relationship("Report", back_populates="approver", foreign_keys="Report.approver_id")
     audit_logs: Mapped[list["ReportAuditLog"]] = relationship("ReportAuditLog", back_populates="actor")
     comments: Mapped[list["ReportComment"]] = relationship("ReportComment", back_populates="author")
     notifications: Mapped[list["Notification"]] = relationship("Notification", back_populates="user")

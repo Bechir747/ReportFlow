@@ -20,6 +20,7 @@ class ReportService:
             reminder_date=data["reminder_date"],
             due_date=data["due_date"],
             depositor_id=uuid.UUID(data["depositor_id"]),
+            approver_id=uuid.UUID(data["approver_id"]) if data.get("approver_id") else None,
         )
         self.db.add(report)
         await self.db.flush()
@@ -48,6 +49,8 @@ class ReportService:
                 query = query.where(Report.priority == filters["priority"])
             if "depositor_id" in filters:
                 query = query.where(Report.depositor_id == uuid.UUID(filters["depositor_id"]))
+            if "approver_id" in filters:
+                query = query.where(Report.approver_id == uuid.UUID(filters["approver_id"]))
         query = query.order_by(Report.created_at.desc())
         result = await self.db.execute(query)
         return list(result.scalars().all())
@@ -64,6 +67,14 @@ class ReportService:
         )
         return list(result.scalars().all())
 
+    async def list_for_approver(self, approver_id: uuid.UUID) -> list[Report]:
+        result = await self.db.execute(
+            select(Report)
+            .where(Report.approver_id == approver_id, Report.status == ReportStatus.PENDING)
+            .order_by(Report.created_at.desc())
+        )
+        return list(result.scalars().all())
+
     async def update(self, report_id: uuid.UUID, data: dict) -> Report | None:
         report = await self.get_by_id(report_id)
         if report is None:
@@ -71,7 +82,7 @@ class ReportService:
 
         for key, value in data.items():
             if value is not None and hasattr(report, key):
-                if key == "depositor_id":
+                if key in ("depositor_id", "approver_id"):
                     value = uuid.UUID(value)
                 setattr(report, key, value)
 

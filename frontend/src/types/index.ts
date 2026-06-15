@@ -21,6 +21,7 @@ export interface Report {
   due_date: string;
   is_active: boolean;
   depositor_id: string;
+  approver_id: string | null;
   current_version_id: string | null;
   created_at: string;
 }

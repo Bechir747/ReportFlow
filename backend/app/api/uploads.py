@@ -1,8 +1,7 @@
 import uuid
-from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
-from fastapi.responses import FileResponse
+from fastapi.responses import Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +11,7 @@ from app.models.report_version import ReportVersion
 from app.models.user import User, UserRole
 from app.services.report_service import ReportService
 from app.services.upload_service import UploadService
+from app.services.storage_service import StorageService
 from app.kafka.producer import KafkaProducer
 
 router = APIRouter(prefix="/api/reports", tags=["uploads"])
@@ -100,11 +100,14 @@ async def download_file(
     if file_path is None:
         raise HTTPException(status_code=404, detail="No file uploaded yet")
 
-    path = Path(file_path)
-    if not path.exists():
+    storage = StorageService()
+    data = storage.get_object(file_path)
+    if data is None:
         raise HTTPException(status_code=404, detail="File not found on storage")
 
-    return FileResponse(path, filename=path.name)
+    filename = file_path.rsplit("/", 1)[-1]
+    return Response(content=data, media_type="application/octet-stream",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})
 
 
 @router.get("/{report_id}/versions/{version_id}/download")
@@ -129,8 +132,11 @@ async def download_version_file(
     if version is None:
         raise HTTPException(status_code=404, detail="Version not found")
 
-    path = Path(version.file_path)
-    if not path.exists():
+    storage = StorageService()
+    data = storage.get_object(version.file_path)
+    if data is None:
         raise HTTPException(status_code=404, detail="File not found on storage")
 
-    return FileResponse(path, filename=path.name)
+    filename = version.file_path.rsplit("/", 1)[-1]
+    return Response(content=data, media_type="application/octet-stream",
+                    headers={"Content-Disposition": f'attachment; filename="{filename}"'})

@@ -29,8 +29,10 @@ export default function AdminDashboard() {
     reminder_date: "",
     due_date: "",
     depositor_id: "",
+    approver_id: "",
   });
   const [depositors, setDepositors] = useState<User[]>([]);
+  const [approvers, setApprovers] = useState<User[]>([]);
   const [depositorsLoading, setDepositorsLoading] = useState(true);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const { addToast } = useToast();
@@ -54,11 +56,16 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const controller = new AbortController();
-    api.get("/users", { params: { role: "DEPOSITOR" }, signal: controller.signal }).then((res) => {
-      setDepositors(res.data);
+    Promise.all([
+      api.get("/users", { params: { role: "DEPOSITOR" }, signal: controller.signal }),
+      api.get("/users", { params: { role: "APPROVER" }, signal: controller.signal }),
+    ]).then(([depRes, appRes]) => {
+      setDepositors(depRes.data);
+      setApprovers(appRes.data);
       setDepositorsLoading(false);
     }).catch(() => {
       setDepositors([]);
+      setApprovers([]);
       setDepositorsLoading(false);
     });
     return () => controller.abort();
@@ -99,9 +106,9 @@ export default function AdminDashboard() {
     if (!validateForm()) return;
     setCreating(true);
     try {
-      await api.post("/reports", form);
+      await api.post("/reports", { ...form, approver_id: form.approver_id || null });
       setShowCreate(false);
-      setForm({ title: "", type: "", priority: "MEDIUM", activation_date: "", reminder_date: "", due_date: "", depositor_id: "" });
+      setForm({ title: "", type: "", priority: "MEDIUM", activation_date: "", reminder_date: "", due_date: "", depositor_id: "", approver_id: "" });
       setFormErrors({});
       addToast("Report created", "success");
       const res = await api.get("/reports");
@@ -377,6 +384,39 @@ export default function AdminDashboard() {
             {formErrors.depositor_id && (
               <span style={{ font: "var(--font-code-sm)", color: "var(--color-error)" }}>{formErrors.depositor_id}</span>
             )}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-xs)" }}>
+            <label style={{ font: "var(--font-label-md)", color: "var(--color-on-surface-variant)" }}>Approver</label>
+            <select
+              value={form.approver_id}
+              onChange={(e) => setForm({ ...form, approver_id: e.target.value })}
+              disabled={depositorsLoading}
+              style={{
+                padding: "8px 12px",
+                borderRadius: "var(--rounded-sm)",
+                border: "1px solid var(--color-outline-variant)",
+                font: "var(--font-body-md)",
+                background: "var(--color-surface-container-lowest)",
+                color: form.approver_id ? "var(--color-on-surface)" : "var(--color-on-surface-variant)",
+                outline: "none",
+                cursor: depositorsLoading ? "not-allowed" : "pointer",
+                transition: "border var(--transition-fast), box-shadow var(--transition-fast)",
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = "var(--color-primary)";
+                e.currentTarget.style.boxShadow = "0 0 0 2px color-mix(in srgb, var(--color-primary) 15%, transparent)";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = "var(--color-outline-variant)";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <option value="" disabled>{depositorsLoading ? "Loading approvers..." : "Select an approver (optional)"}</option>
+              <option value="">No approver</option>
+              {approvers.map((a) => (
+                <option key={a.id} value={a.id}>{a.email}</option>
+              ))}
+            </select>
           </div>
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "var(--space-sm)", marginTop: "var(--space-sm)" }}>
             <Button variant="secondary" type="button" onClick={() => { setShowCreate(false); setFormErrors({}); }}>Cancel</Button>

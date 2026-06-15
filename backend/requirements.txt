@@ -11,3 +11,4 @@ pydantic[email]>=2.10.0
 pydantic-settings>=2.6.0
 python-multipart>=0.0.18
 apscheduler>=3.10.4
+boto3>=1.35.0

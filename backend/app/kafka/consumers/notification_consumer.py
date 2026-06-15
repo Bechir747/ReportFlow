@@ -36,10 +36,18 @@ class NotificationConsumer:
             target_users = []
 
             if topic in ("report.submitted", "report.reuploaded"):
-                approver_result = await db.execute(
-                    select(User).where(User.role == UserRole.APPROVER)
-                )
-                target_users = list(approver_result.scalars().all())
+                if report.approver_id:
+                    approver_result = await db.execute(
+                        select(User).where(User.id == report.approver_id)
+                    )
+                    approver = approver_result.scalar_one_or_none()
+                    if approver:
+                        target_users = [approver]
+                else:
+                    approver_result = await db.execute(
+                        select(User).where(User.role == UserRole.APPROVER)
+                    )
+                    target_users = list(approver_result.scalars().all())
             elif topic == "report.created":
                 pass
             else:

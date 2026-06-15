@@ -11,6 +11,7 @@ class ReportCreate(BaseModel):
     reminder_date: datetime
     due_date: datetime
     depositor_id: str
+    approver_id: str | None = None
 
     @field_validator("priority")
     @classmethod
@@ -45,6 +46,7 @@ class ReportUpdate(BaseModel):
     reminder_date: datetime | None = None
     due_date: datetime | None = None
     depositor_id: str | None = None
+    approver_id: str | None = None
 
 
 class ReportResponse(BaseModel):
@@ -58,6 +60,7 @@ class ReportResponse(BaseModel):
     due_date: datetime
     is_active: bool
     depositor_id: str
+    approver_id: str | None = None
     current_version_id: str | None
     created_at: datetime
 

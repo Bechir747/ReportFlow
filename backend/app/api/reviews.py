@@ -62,6 +62,7 @@ async def review_report(
         due_date=report.due_date,
         is_active=report.is_active,
         depositor_id=str(report.depositor_id),
+        approver_id=str(report.approver_id) if report.approver_id else None,
         current_version_id=str(report.current_version_id) if report.current_version_id else None,
         created_at=report.created_at,
     )

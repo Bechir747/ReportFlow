@@ -39,10 +39,12 @@ class Report(Base):
     reminder_notified: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[ReportStatus] = mapped_column(Enum(ReportStatus), default=None, nullable=True)
     depositor_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    approver_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     current_version_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("report_versions.id"), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     depositor: Mapped["User"] = relationship("User", back_populates="reports", foreign_keys=[depositor_id])
+    approver: Mapped["User | None"] = relationship("User", back_populates="approver_reports", foreign_keys=[approver_id])
     versions: Mapped[list["ReportVersion"]] = relationship("ReportVersion", back_populates="report", foreign_keys="ReportVersion.report_id")
     current_version: Mapped["ReportVersion | None"] = relationship("ReportVersion", foreign_keys=[current_version_id], post_update=True)
     audit_logs: Mapped[list["ReportAuditLog"]] = relationship("ReportAuditLog", back_populates="report")

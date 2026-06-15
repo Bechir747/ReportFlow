@@ -10,12 +10,14 @@ from app.models.report import Report, ReportStatus
 from app.models.report_version import ReportVersion
 from app.models.report_audit_log import ReportAuditLog
 from app.services.report_service import ReportService
+from app.services.storage_service import StorageService
 
 
 class UploadService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.report_service = ReportService(db)
+        self.storage = StorageService()
 
     def validate_file(self, filename: str, content_length: int) -> None:
         ext = Path(filename).suffix.lower()
@@ -47,17 +49,13 @@ class UploadService:
         existing = list(versions_result.scalars().all())
         version_number = len(existing) + 1
 
-        report_dir = Path(settings.UPLOAD_DIR) / str(report.id)
-        report_dir.mkdir(parents=True, exist_ok=True)
-
-        storage_name = f"v{version_number}_{filename}"
-        file_path = report_dir / storage_name
-        file_path.write_bytes(file_content)
+        object_key = f"reports/{report.id}/v{version_number}_{filename}"
+        self.storage.put_object(object_key, file_content)
 
         version = ReportVersion(
             report_id=report.id,
             version_number=version_number,
-            file_path=str(file_path),
+            file_path=object_key,
         )
         self.db.add(version)
         await self.db.flush()
@@ -75,7 +73,7 @@ class UploadService:
             action="reuploaded" if is_redo else "uploaded",
             from_status=old_status,
             to_status=ReportStatus.PENDING.value,
-            extra_data={"version_number": version_number, "file_path": str(file_path)},
+            extra_data={"version_number": version_number, "file_path": object_key},
         )
         self.db.add(audit)
 

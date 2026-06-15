@@ -56,10 +56,13 @@ export default function ApproverDashboard() {
   const downloadFile = async (reportId: string) => {
     try {
       const res = await api.get(`/reports/${reportId}/download`, { responseType: "blob" });
+      const disposition = res.headers?.["content-disposition"];
+      const match = disposition?.match(/filename="?([^"]+)"?/);
+      const filename = match?.[1] || "report-file";
       const url = URL.createObjectURL(res.data);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "report-file";
+      a.download = filename;
       a.click();
       URL.revokeObjectURL(url);
     } catch {
@@ -120,7 +123,7 @@ export default function ApproverDashboard() {
           Loading...
         </div>
       ) : reports.length === 0 ? (
-        <EmptyState message="No pending reports to review. New submissions will appear here." />
+        <EmptyState message="No pending reports assigned to you. New submissions will appear here." />
       ) : (
         <Table columns={columns} rows={rows} />
       )}

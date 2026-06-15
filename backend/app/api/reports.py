@@ -43,6 +43,7 @@ async def create_report(
         due_date=report.due_date,
         is_active=report.is_active,
         depositor_id=str(report.depositor_id),
+        approver_id=str(report.approver_id) if report.approver_id else None,
         current_version_id=str(report.current_version_id) if report.current_version_id else None,
         created_at=report.created_at,
     )
@@ -53,6 +54,7 @@ async def list_reports(
     status: str | None = Query(None),
     priority: str | None = Query(None),
     depositor_id: str | None = Query(None),
+    approver_id: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -66,11 +68,13 @@ async def list_reports(
             filters["priority"] = priority
         if depositor_id:
             filters["depositor_id"] = depositor_id
+        if approver_id:
+            filters["approver_id"] = approver_id
         reports = await service.list_all(filters)
     elif current_user.role == UserRole.DEPOSITOR:
         reports = await service.list_for_depositor(current_user.id)
     elif current_user.role == UserRole.APPROVER:
-        reports = await service.list_pending()
+        reports = await service.list_for_approver(current_user.id)
     else:
         reports = []
 
@@ -86,6 +90,7 @@ async def list_reports(
             due_date=r.due_date,
             is_active=r.is_active,
             depositor_id=str(r.depositor_id),
+            approver_id=str(r.approver_id) if r.approver_id else None,
             current_version_id=str(r.current_version_id) if r.current_version_id else None,
             created_at=r.created_at,
         )
@@ -115,6 +120,7 @@ async def get_report(
         due_date=report.due_date,
         is_active=report.is_active,
         depositor_id=str(report.depositor_id),
+        approver_id=str(report.approver_id) if report.approver_id else None,
         current_version_id=str(report.current_version_id) if report.current_version_id else None,
         created_at=report.created_at,
     )
@@ -143,6 +149,7 @@ async def update_report(
         due_date=report.due_date,
         is_active=report.is_active,
         depositor_id=str(report.depositor_id),
+        approver_id=str(report.approver_id) if report.approver_id else None,
         current_version_id=str(report.current_version_id) if report.current_version_id else None,
         created_at=report.created_at,
     )
@@ -194,6 +201,7 @@ async def activate_report(
         due_date=report.due_date,
         is_active=report.is_active,
         depositor_id=str(report.depositor_id),
+        approver_id=str(report.approver_id) if report.approver_id else None,
         current_version_id=str(report.current_version_id) if report.current_version_id else None,
         created_at=report.created_at,
     )
