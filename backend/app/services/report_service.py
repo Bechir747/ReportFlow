@@ -2,9 +2,12 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.report import Report, ReportPriority, ReportStatus
 from app.models.report_audit_log import ReportAuditLog
+from app.models.report_version import ReportVersion
+from app.services.storage_service import StorageService
 
 
 class ReportService:
@@ -89,10 +92,39 @@ class ReportService:
         await self.db.flush()
         return report
 
-    async def delete(self, report_id: uuid.UUID) -> bool:
-        report = await self.get_by_id(report_id)
+    async def delete(self, report_id: uuid.UUID, actor_id: uuid.UUID) -> bool:
+        result = await self.db.execute(
+            select(Report)
+            .options(selectinload(Report.versions))
+            .where(Report.id == report_id)
+        )
+        report = result.scalar_one_or_none()
         if report is None:
             return False
+
+        storage = StorageService()
+
+        # Clear current_version_id FK before deleting versions
+        if report.current_version_id:
+            report.current_version_id = None
+            await self.db.flush()
+
+        # Delete MinIO files for each version
+        for version in report.versions:
+            if version.file_path:
+                storage.delete_object(version.file_path)
+
+        # Create audit log entry for deletion
+        audit = ReportAuditLog(
+            report_id=report.id,
+            actor_id=actor_id,
+            action="deleted",
+            from_status=report.status.value if report.status else None,
+            to_status=None,
+        )
+        self.db.add(audit)
+        await self.db.flush()
+
         await self.db.delete(report)
         return True
 

@@ -2,7 +2,7 @@
 
 Event-driven workflow management system for report submission, review, and approval.
 
-**Stack:** React + Vite (frontend), FastAPI (backend), PostgreSQL, Apache Kafka, JWT auth, Docker Compose.
+**Stack:** React + Vite (frontend), FastAPI (backend), PostgreSQL, Apache Kafka, MinIO (S3-compatible object storage), JWT auth, Docker Compose.
 
 ---
 
@@ -37,24 +37,35 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 Open `.env` and replace `<generate-a-strong-secret>` with the generated key.
 
+The `.env` also includes MinIO credentials (`MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`) — defaults work out of the box.
+
 ### 3. Start All Services
 
 ```bash
 docker compose up --build
 ```
 
-This starts 5 containers:
+This starts 6 containers:
 | Service | Port (Host) | Description |
 |---------|-------------|-------------|
 | `postgres` | `5434` | Database |
 | `zookeeper` | `2181` | Kafka coordinator |
 | `kafka` | `9092` | Event broker |
+| `minio` | `9100` (S3 API), `9101` (Console) | S3-compatible object store |
 | `backend` | `8001` | FastAPI backend |
 | `frontend` | `3001` | Vite dev server |
 
 Wait for all services to be healthy — the backend waits for postgres and kafka.
 
-### 4. Create Kafka Topics
+### 4. Apply Database Migrations
+
+```bash
+docker exec -it reportflow-backend alembic upgrade head
+```
+
+(Migrations are also auto-applied on backend startup via `main.py`.)
+
+### 5. Create Kafka Topics
 
 Open a **new terminal** and run:
 
@@ -62,9 +73,9 @@ Open a **new terminal** and run:
 .\scripts\create_kafka_topics.ps1
 ```
 
-This creates all 10 required topics (`report.created`, `report.submitted`, `report.approved`, etc.) inside the Kafka container.
+This creates all required topics (`report.created`, `report.submitted`, `report.approved`, etc.) inside the Kafka container.
 
-### 5. Seed Users
+### 6. Seed Users
 
 Seed three default accounts into the database:
 
@@ -78,11 +89,13 @@ docker exec -it reportflow-backend python -m app.seed.seed_users
 | Depositor | `depositor@reportflow.com` | `depositor123` |
 | Approver | `approver@reportflow.com` | `approver123` |
 
-### 6. Access the Application
+### 7. Access the Application
 
 Open [http://localhost:3001](http://localhost:3001) in your browser.
 
 Log in with any of the seeded accounts — the UI redirects to the appropriate dashboard based on role.
+
+> **MinIO Console** is available at [http://localhost:9101](http://localhost:9101) (login: `minioadmin` / `minioadmin`).
 
 ---
 
@@ -113,6 +126,7 @@ curl -X POST http://localhost:8001/api/auth/login \
 | Stop everything | `docker compose down` |
 | Stop + delete volumes | `docker compose down -v` |
 | Access DB shell | `docker exec -it reportflow-postgres psql -U user -d reportflow` |
+| Run migrations | `docker exec -it reportflow-backend alembic upgrade head` |
 | Run backend commands | `docker exec -it reportflow-backend python -m ...` |
 
 ---
@@ -126,14 +140,14 @@ curl -X POST http://localhost:8001/api/auth/login \
 | POST | `/api/auth/logout` | JWT | Logout |
 | GET | `/api/auth/me` | JWT | Current user |
 | GET | `/api/users` | Admin | List all users |
-| POST | `/api/reports` | Admin | Create report |
-| GET | `/api/reports` | JWT | List reports (scoped by role) |
+| POST | `/api/reports` | Admin | Create report (supports `approver_id`) |
+| GET | `/api/reports` | JWT | List reports (scoped by role; supports `approver_id` filter) |
 | GET | `/api/reports/{id}` | JWT | Get report detail |
-| PATCH | `/api/reports/{id}` | Admin | Update report |
+| PATCH | `/api/reports/{id}` | Admin | Update report (supports `approver_id`) |
 | DELETE | `/api/reports/{id}` | Admin | Delete report |
 | POST | `/api/reports/{id}/activate` | Admin | Activate report |
-| POST | `/api/reports/{id}/upload` | Depositor | Upload file |
-| GET | `/api/reports/{id}/download` | JWT | Download latest file |
+| POST | `/api/reports/{id}/upload` | Depositor | Upload file (stored in MinIO) |
+| GET | `/api/reports/{id}/download` | JWT | Download latest file (streamed from MinIO) |
 | GET | `/api/reports/{id}/versions` | JWT | List versions |
 | GET | `/api/reports/{id}/versions/{vid}/download` | JWT | Download specific version |
 | PATCH | `/api/reports/{id}/review` | Approver | Review (approve/reject/redo/cancel) |
@@ -156,14 +170,15 @@ ReportFlow/
 │   │   ├── auth/          # JWT + dependency guards
 │   │   ├── models/        # SQLAlchemy ORM models
 │   │   ├── schemas/       # Pydantic request/response models
-│   │   ├── services/      # Business logic
+│   │   ├── services/      # Business logic (incl. upload_service, storage_service)
 │   │   ├── kafka/         # Producers + consumers
 │   │   ├── scheduler/     # APScheduler jobs
 │   │   ├── seed/          # Database seeders
 │   │   ├── config.py      # Settings
 │   │   ├── database.py    # DB engine + session
 │   │   └── main.py        # App entry point
-│   ├── alembic/           # DB migrations (config only)
+│   ├── alembic/           # DB migrations
+│   ├── scripts/           # Migration & e2e test scripts
 │   └── requirements.txt
 ├── frontend/              # React + Vite application
 │   ├── src/

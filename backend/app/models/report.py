@@ -45,7 +45,7 @@ class Report(Base):
 
     depositor: Mapped["User"] = relationship("User", back_populates="reports", foreign_keys=[depositor_id])
     approver: Mapped["User | None"] = relationship("User", back_populates="approver_reports", foreign_keys=[approver_id])
-    versions: Mapped[list["ReportVersion"]] = relationship("ReportVersion", back_populates="report", foreign_keys="ReportVersion.report_id")
+    versions: Mapped[list["ReportVersion"]] = relationship("ReportVersion", back_populates="report", foreign_keys="ReportVersion.report_id", cascade="all, delete-orphan")
     current_version: Mapped["ReportVersion | None"] = relationship("ReportVersion", foreign_keys=[current_version_id], post_update=True)
-    audit_logs: Mapped[list["ReportAuditLog"]] = relationship("ReportAuditLog", back_populates="report")
-    comments: Mapped[list["ReportComment"]] = relationship("ReportComment", back_populates="report")
+    audit_logs: Mapped[list["ReportAuditLog"]] = relationship("ReportAuditLog", back_populates="report", cascade="all, delete-orphan")
+    comments: Mapped[list["ReportComment"]] = relationship("ReportComment", back_populates="report", cascade="all, delete-orphan")

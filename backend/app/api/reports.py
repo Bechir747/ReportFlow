@@ -214,6 +214,6 @@ async def delete_report(
     current_user: User = Depends(require_admin),
 ):
     service = ReportService(db)
-    deleted = await service.delete(report_id)
+    deleted = await service.delete(report_id, current_user.id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Report not found")

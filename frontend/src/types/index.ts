@@ -49,7 +49,7 @@ export interface Notification {
 
 export interface AuditLogEntry {
   id: string;
-  actor_id: string;
+  actor_email: string;
   action: string;
   from_status: string | null;
   to_status: string | null;

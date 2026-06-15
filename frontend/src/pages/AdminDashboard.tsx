@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
+import { Rocket, ScrollText, Trash2 } from "lucide-react";
 import api from "../api/client";
 import type { Report, AuditLogEntry, User } from "../types";
 import { useToast } from "../contexts/ToastContext";
 import Button from "../components/Button";
 import Input from "../components/Input";
 import Modal from "../components/Modal";
+import ConfirmDialog from "../components/ConfirmDialog";
 import StatusBadge from "../components/StatusBadge";
 import PriorityBadge from "../components/PriorityBadge";
 import Table from "../components/Table";
@@ -18,6 +20,7 @@ export default function AdminDashboard() {
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [auditReport, setAuditReport] = useState<Report | null>(null);
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
   const [auditLoading, setAuditLoading] = useState(false);
@@ -121,8 +124,8 @@ export default function AdminDashboard() {
   };
 
   const deleteReport = async (id: string) => {
-    if (!window.confirm("Delete this report? This cannot be undone.")) return;
     setDeleting(id);
+    setConfirmDelete(null);
     try {
       await api.delete(`/reports/${id}`);
       addToast("Report deleted", "success");
@@ -178,7 +181,8 @@ export default function AdminDashboard() {
         {!r.is_active && !r.status && (
           <Button
             variant="secondary"
-            style={{ fontSize: 12, padding: "4px 10px" }}
+            style={{ padding: 6, minWidth: 32, height: 32 }}
+            aria-label="Activate report"
             onClick={async (e) => {
               e.stopPropagation();
               try {
@@ -191,23 +195,25 @@ export default function AdminDashboard() {
               }
             }}
           >
-            Activate
+            <Rocket size={16} />
           </Button>
         )}
         <Button
           variant="ghost"
-          style={{ fontSize: 12, padding: "4px 10px" }}
+          style={{ padding: 6, minWidth: 32, height: 32 }}
+          aria-label="View audit log"
           onClick={(e) => { e.stopPropagation(); viewAuditLog(r); }}
         >
-          Audit
+          <ScrollText size={16} />
         </Button>
         <Button
           variant="danger"
-          style={{ fontSize: 12, padding: "4px 10px" }}
+          style={{ padding: 6, minWidth: 32, height: 32 }}
+          aria-label="Delete report"
           loading={deleting === r.id}
-          onClick={(e) => { e.stopPropagation(); deleteReport(r.id); }}
+          onClick={(e) => { e.stopPropagation(); setConfirmDelete(r.id); }}
         >
-          Delete
+          <Trash2 size={16} />
         </Button>
       </div>
     ),
@@ -468,7 +474,7 @@ export default function AdminDashboard() {
                   {!entry.from_status && entry.to_status && <span> &rarr; {entry.to_status}</span>}
                 </p>
                 <small style={{ font: "var(--font-code-sm)", color: "var(--color-on-surface-variant)" }}>
-                  by {entry.actor_id.slice(0, 8)}
+                  by {entry.actor_email}
                 </small>
                 {entry.metadata && (
                   <pre
@@ -489,6 +495,17 @@ export default function AdminDashboard() {
           </div>
         )}
       </Modal>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Report"
+        message="Are you sure you want to delete this report? This action cannot be undone and will permanently remove all associated files, comments, and audit logs."
+        confirmLabel="Delete"
+        confirmVariant="danger"
+        loading={!!deleting}
+        onConfirm={() => confirmDelete && deleteReport(confirmDelete)}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </>
   );
 }

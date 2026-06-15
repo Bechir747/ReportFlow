@@ -1,8 +1,9 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.auth.dependencies import require_admin
 from app.database import get_db
@@ -20,6 +21,7 @@ async def get_audit_log(
 ):
     result = await db.execute(
         select(ReportAuditLog)
+        .options(selectinload(ReportAuditLog.actor))
         .where(ReportAuditLog.report_id == report_id)
         .order_by(ReportAuditLog.created_at.asc())
     )
@@ -28,7 +30,7 @@ async def get_audit_log(
     return [
         {
             "id": str(log.id),
-            "actor_id": str(log.actor_id),
+            "actor_email": log.actor.email,
             "action": log.action,
             "from_status": log.from_status,
             "to_status": log.to_status,
